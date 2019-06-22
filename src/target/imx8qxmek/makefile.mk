@@ -1,2 +1,0 @@
-
-PLAT = imx8x
