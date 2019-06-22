@@ -71,7 +71,7 @@ $(BUILD_DIR)/%.o: %.c
 	@$(CC) -c $(CFLAGS) $< -o $@
 
 install: all
-	@install -m 755 $(TARGET_BIN) $(PREFIX)
+	@install -m 755 $(BUILD_DIR)/$(TARGET_BIN) $(PREFIX)
 
 clean:
 	@-rm -rf $(BUILD_DIR)/
