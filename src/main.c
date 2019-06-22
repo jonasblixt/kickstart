@@ -214,7 +214,6 @@ int main(int argc, char **argv)
 	struct crypt_device *cd = NULL;
 	struct crypt_params_verity params = {};
 	uint32_t activate_flags = CRYPT_ACTIVATE_READONLY;
-    //fprintf (log,"Calling crypt_init_data_device\n");
     rc = crypt_init_data_device(&cd, "/dev/mmcblk0p3", "/dev/mmcblk0p3");
 
     //fprintf (log,"crypt_init_data_device = %i\n",rc);
@@ -226,26 +225,19 @@ int main(int argc, char **argv)
 
     rc = crypt_load(cd, CRYPT_VERITY, &params);
 
-    //fprintf (log,"crypt_load = %i\n",rc);
-
 	ssize_t hash_size = crypt_get_volume_key_size(cd);
     char *root_hash_bytes = NULL;
-    hex_to_bytes("5268cdd7cdabf1cf180a931e4946b5e09cae9735c268f8c8f7a8ff0e303a8523",
-                &root_hash_bytes);
+    char root_hash_string[65];
+    fp = fopen("/roothash","r");
+    fread(root_hash_string, 64,1,fp);
+    fclose(fp);
+
+    hex_to_bytes(root_hash_string, &root_hash_bytes);
 
 	rc = crypt_activate_by_volume_key(cd, "vroot",
 					 root_hash_bytes,
 					 hash_size,
 					 activate_flags);
-    //fprintf (log,"crypt_activate_by_volume = %i\n",rc);
-/*
-    while (1) {
-        int r = recv(nl_socket, msg, sizeof(msg), MSG_DONTWAIT);
-        if (r >= 0)
-        {
-            printf("uevt: %i %s\n", r, msg);
-        }
-    }*/
 
     rc = mount("/dev/mapper/vroot", "/newroot", "squashfs", MS_RDONLY, "");
 
@@ -284,23 +276,6 @@ int main(int argc, char **argv)
         if (pid == 0)
             exit(0);
     }
-
-
-/*
-    DIR *d;
-    struct dirent *dir;
-    d = opendir("/dev/");
-
-    if (d)
-    {
-        while ((dir = readdir(d)) != NULL)
-        {
-            printf("%s\n", dir->d_name);
-        }
-
-        closedir(d);
-    }
-*/
 
     log = fopen("/dev/kmsg","w");
     fprintf (log,"Kickstart done...\n", VERSION);
