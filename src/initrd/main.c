@@ -232,17 +232,9 @@ static int ks_switchroot(const char *root_device, const char *fs_type)
     if (rc == -1)
       ks_panic ("Could not mount /newroot");
 
-    umount("/dev");
-    mount("/newroot/proc", "/proc", NULL, MS_MOVE, NULL);
-    mount("/newroot/sys", "/sys", NULL, MS_MOVE, NULL);
-
-    rc = mount("none", "/newroot/dev", "devtmpfs", 0, "");
-
-    if (rc == -1)
-    {
-        ks_log ("Could not mount /dev\n");
-        return -1;
-    }
+    mount("/dev",  "/newroot/dev", NULL, MS_MOVE, NULL);
+    mount("/proc", "/newroot/proc", NULL, MS_MOVE, NULL);
+    mount("/sys",  "/newroot/sys", NULL, MS_MOVE, NULL);
 
     rc = chdir("/newroot");
 
