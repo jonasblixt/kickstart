@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-TARGET_BIN  = kickstart
+TARGET_BIN  = kickstart-initrd
 
 PREFIX ?= /sbin
 PKG_CONFIG ?= pkg-config
@@ -38,14 +38,15 @@ CFLAGS  += -Wall -Os
 CFLAGS  += -DVERSION=\"$(GIT_VERSION)\"
 CFLAGS  += -DROOTDEVICE=\"$(ROOTDEVICE)\"
 CFLAGS  += $(shell $(PKG_CONFIG) --cflags blkid uuid libcryptsetup json-c blkid)
-# CFLAGS  += -I . --sysroot $(KS_SYSROOT)
+CFLAGS  += -I . --sysroot $(KS_SYSROOT)
 CFLAGS  += -I $(KS_SYSROOT)/include
 CFLAGS  += -MMD -MP
 
 
 LIBS    = $(shell $(PKG_CONFIG) --libs blkid libcryptsetup uuid json-c blkid)
+LIBS   += -ldevmapper -lpthread -lm
 
-LDFLAGS =
+LDFLAGS = -L/sdk/lib
 
 ASM_SRCS =
 C_SRCS   = main.c
@@ -55,7 +56,7 @@ OBJS     += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SRCS))
 
 DEPS = $(OBJS:%.o=%.d)
 
-BUILD_DIR = build
+BUILD_DIR = ../build
 
 ifdef CODE_COV
 	CFLAGS += -fprofile-arcs -ftest-coverage
@@ -67,9 +68,19 @@ all: $(BUILD_DIR)/$(TARGET_BIN)
 
 $(BUILD_DIR)/$(TARGET_BIN): $(OBJS)
 	@echo LINK $@ $(LDFLAGS)
-	@$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+	@$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -static -o $@
 	@$(STRIP) --strip-all $@
 
+initrd:
+	@mkdir -p $(BUILD_DIR)/initrd/proc
+	@mkdir -p $(BUILD_DIR)/initrd/dev
+	@mkdir -p $(BUILD_DIR)/initrd/tmp
+	@mkdir -p $(BUILD_DIR)/initrd/sys
+	@mkdir -p $(BUILD_DIR)/initrd/newroot
+	@echo -n $(KS_ROOT_HASH) > $(BUILD_DIR)/initrd/roothash
+	@cp $(BUILD_DIR)/kickstart-initrd $(BUILD_DIR)/initrd/init
+	@cd $(BUILD_DIR)/initrd \
+		&& find . | cpio -H newc -o > ../initramfs.cpio
 
 $(BUILD_DIR)/%.o: %.c
 	@echo CC $<
