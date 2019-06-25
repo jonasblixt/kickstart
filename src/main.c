@@ -37,7 +37,6 @@ static int ks_cat(const char *fn)
     do
     {
         read_sz = fread(buf, 1, 64, fp);
-        printf ("read_sz = %i\n",read_sz);
         if (fwrite(buf, 1, read_sz, stdout) != read_sz)
             break;
     }
@@ -55,7 +54,7 @@ int main(int argc, char **argv)
     ctrl.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &ctrl);
 
-    printf (" --- Kickstart %s ---\n",VERSION);
+    printf (" --- sdf aKickstart %s ---\n",VERSION);
 
     while (1)
     {
@@ -63,8 +62,7 @@ int main(int argc, char **argv)
 
         if (c == 'l')
         {
-            ks_ls ("/");
-            if (!ks_cat("/proc/crypto"))
+            if (ks_cat("/proc/crypto") != 0)
             {
                 printf ("ks_cat failed\n");
             }
