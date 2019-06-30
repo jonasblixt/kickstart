@@ -20,6 +20,7 @@
 
 #define ks_log(...) \
     do { FILE *fp = fopen("/dev/kmsg","w"); \
+    printf( "ks: " __VA_ARGS__); \
     fprintf(fp, "ks: " __VA_ARGS__); \
     fclose(fp); } while(0)
 
