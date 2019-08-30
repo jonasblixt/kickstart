@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     ctrl.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &ctrl);
 
-    printf (" --- sdf aKickstart %s ---\n",VERSION);
+    printf (" --- Kickstart %s ---\n",VERSION);
 
     while (1)
     {

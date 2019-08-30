@@ -37,12 +37,13 @@ GIT_VERSION = $(shell git describe --abbrev=4 --dirty --always --tags)
 CFLAGS  += -Wall -Os
 CFLAGS  += -DVERSION=\"$(GIT_VERSION)\"
 CFLAGS  += -DROOTDEVICE=\"$(ROOTDEVICE)\"
-#CFLAGS  += $(shell $(PKG_CONFIG) --cflags blkid uuid libcryptsetup json-c blkid)
+CFLAGS  += $(shell $(PKG_CONFIG) --cflags blkid uuid libcryptsetup json-c blkid)
 CFLAGS  += -I $(KS_SYSROOT)/include
+CFLAGS  += -I include
 CFLAGS  += -MMD -MP
 
 
-LIBS    = #$(shell $(PKG_CONFIG) --libs blkid libcryptsetup uuid json-c blkid)
+LIBS    = $(shell $(PKG_CONFIG) --libs blkid libcryptsetup uuid json-c blkid)
 
 LDFLAGS =
 
