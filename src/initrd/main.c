@@ -151,6 +151,16 @@ static void ks_early_init(void)
 
     if (rc == -1)
         ks_panic ("Could not mount /dev\n");
+
+    rc = mount("none", "/tmp", "tmpfs", 0, "");
+
+    if (rc == -1)
+        ks_panic ("Could not mount /tmp\n");
+
+    rc = mount("none", "/data/tee", "tmpfs", 0, "");
+
+    if (rc == -1)
+        ks_panic ("Could not mount /data/tee\n");
 }
 
 static int ks_verity_init(char *root_device_str, uint8_t *root_hash,
@@ -198,6 +208,8 @@ static int ks_switchroot(const char *root_device, const char *fs_type)
     mount("/dev",  "/newroot/dev", NULL, MS_MOVE, NULL);
     mount("/proc", "/newroot/proc", NULL, MS_MOVE, NULL);
     mount("/sys",  "/newroot/sys", NULL, MS_MOVE, NULL);
+    mount("/tmp",  "/newroot/tmp", NULL, MS_MOVE, NULL);
+    mount("/data/tee",  "/newroot/data/tee", NULL, MS_MOVE, NULL);
 
     rc = chdir("/newroot");
 
@@ -400,7 +412,7 @@ int main(int argc, char **argv)
     uint64_t hash_tree_offset = 0;
     uint8_t root_hash[32];
     struct kickstart_block ksb;
-
+    printf ("****** KS INIT *****\n");
     /* Initialize really early stuff, like mounting /proc, /sys etc */
     ks_early_init();
 
@@ -421,6 +433,8 @@ int main(int argc, char **argv)
     /* Wait for root block device to become available */
     /* HACK: for emmc's boot devices enumerates after all partitions
      *  this should be handeled in a more generic way */
+    /* TODO: Slower systems can enumerate mmc before init starts
+     *  at which point there will be no message received */
     ks_wait_for_device(ROOTDEVICE"boot0");
 
     /* Lookup partition UUID and translate to a /dev device-node */

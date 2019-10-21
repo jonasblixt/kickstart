@@ -395,7 +395,7 @@ uint32_t ksmkfs_out(const char *fn)
 	params.hash_block_size = DEFAULT_VERITY_HASH_BLOCK;
 	params.data_size = 0;
 	params.hash_area_offset = finfo.st_size + sizeof(ksb);
-	params.fec_area_offset = 0;
+	//params.fec_area_offset = 0;
 	params.hash_type = 1; /* 1 - normal, 0 - chrome OS*/
 	params.flags = flags;
 

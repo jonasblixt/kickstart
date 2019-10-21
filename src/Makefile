@@ -42,13 +42,14 @@ CFLAGS  += -I $(KS_SYSROOT)/include
 CFLAGS  += -I include
 CFLAGS  += -MMD -MP
 
-
+$(info $(CFLAGS))
 LIBS    = $(shell $(PKG_CONFIG) --libs blkid libcryptsetup uuid json-c blkid)
 
 LDFLAGS =
 
 ASM_SRCS =
 C_SRCS   = main.c
+C_SRCS  += service.c
 
 OBJS     += $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_SRCS))
 OBJS     += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SRCS))
@@ -59,6 +60,10 @@ BUILD_DIR = build
 
 ifdef CODE_COV
 	CFLAGS += -fprofile-arcs -ftest-coverage
+endif
+
+ifndef BOARD
+$(info BOARD not defined)
 endif
 
 .PHONY: initrd

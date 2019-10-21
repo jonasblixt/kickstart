@@ -62,9 +62,32 @@ int main(int argc, char **argv)
 
         if (c == 'l')
         {
-            if (ks_cat("/proc/crypto") != 0)
+            if (ks_ls("/") != 0)
             {
                 printf ("ks_cat failed\n");
+            }
+        }
+
+        if (c == 't')
+        {
+            pid_t p = fork();
+
+            if (p == 0)
+            {
+                printf ("Starting tee-supplicant...\n");
+                int rc = execl("/tee-supplicant",NULL);
+                printf ("rc = %i\n",rc);
+            }
+        }
+
+        if (c == 'x')
+        {
+            pid_t p = fork();
+            if (p == 0)
+            {
+                printf ("Starting xtest\n");
+                int rc = execl("/xtest", NULL);
+                printf ("rc = %i\n",rc);
             }
         }
 
