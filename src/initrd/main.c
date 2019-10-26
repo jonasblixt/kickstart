@@ -25,11 +25,16 @@
 
 #define NL_MAX_PAYLOAD 8192
 
-#define ks_log(...) \
+#define ks_log2(...) \
     do { FILE *fp = fopen("/dev/kmsg","w"); \
     printf( "ks: " __VA_ARGS__); \
     fprintf(fp, "ks: " __VA_ARGS__); \
     fclose(fp); } while(0)
+
+#define ks_log(...) \
+    do { \
+    printf( "ks: " __VA_ARGS__); \
+    } while(0)
 
 static blkid_cache bc;
 
@@ -161,6 +166,11 @@ static void ks_early_init(void)
 
     if (rc == -1)
         ks_panic ("Could not mount /data/tee\n");
+
+    rc = mount("none", "/sys/kernel/config", "configfs", 0, "");
+
+    if (rc == -1)
+        ks_panic ("Could not mount configfs\n");
 }
 
 static int ks_verity_init(char *root_device_str, uint8_t *root_hash,
@@ -210,7 +220,7 @@ static int ks_switchroot(const char *root_device, const char *fs_type)
     mount("/sys",  "/newroot/sys", NULL, MS_MOVE, NULL);
     mount("/tmp",  "/newroot/tmp", NULL, MS_MOVE, NULL);
     mount("/data/tee",  "/newroot/data/tee", NULL, MS_MOVE, NULL);
-
+    mount("/sys/kernel/config",  "/newroot/sys/kernel/config", NULL, MS_MOVE, NULL);
     rc = chdir("/newroot");
 
     if (rc != 0)
