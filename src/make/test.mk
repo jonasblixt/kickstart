@@ -1,7 +1,7 @@
 TEST_TARGETS = 
 TESTS =
 
-TEST_BASE_SRC = 3pp/narwhal.c
+TEST_BASE_SRC = 3pp/narwhal/narwhal.c
 CFLAGS  += -I 3pp/narwhal
 
 -include $(wildcard test/*/makefile.mk)
@@ -11,7 +11,7 @@ CFLAGS  += -I 3pp/narwhal
 	@$(BUILD_DIR)/test-$(TEST_NAME)
 
 %-test-link:
-	@$(CC) $($(2)_LDFLAGS) $($(TEST_NAME)_OBJS) \
+	@$(CC) $(CFLAGS) $($(TEST_NAME)_OBJS) $($(2)_LDFLAGS) \
 				-o $(BUILD_DIR)/test-$(TEST_NAME)
 
 define testcase-inner
