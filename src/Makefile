@@ -62,7 +62,7 @@ $(BUILD_DIR)/%.o: %.c
 	@echo CC $<
 	@mkdir -p $(@D)
 	@$(CC) -c $(CFLAGS) $< -o $@
-
+	$(info output = $@) 
 install: all
 	@install -m 755 $(BUILD_DIR)/$(TARGET_BIN) $(PREFIX)
 
@@ -71,5 +71,7 @@ clean:
 	@-rm -rf build-*/
 
 test: $(TEST_TARGETS)
+
+$(info $(LOG_OBJS))
 
 -include $(DEPS)

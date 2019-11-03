@@ -5,10 +5,10 @@
 int ks_eventloop_init(struct ks_eventloop_ctx *ctx)
 {
     ctx->run = false;
-	ctx->ep_fd = epoll_create(KS_EVENTLOOP_MAX_EVENTS);
+    ctx->ep_fd = epoll_create(KS_EVENTLOOP_MAX_EVENTS);
 
-	if (ctx->ep_fd == -1)
-		return KS_ERR;
+    if (ctx->ep_fd == -1)
+        return KS_ERR;
 
     ctx->run = true;
     return KS_OK;
@@ -36,7 +36,7 @@ int ks_eventloop_remove(struct ks_eventloop_ctx *ctx,
         goto eventloop_remove_err_out;
     }
     
-	if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_DEL, io->fd, NULL) == -1)
+    if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_DEL, io->fd, NULL) == -1)
         rc = KS_ERR;
 
     free(io);
@@ -70,7 +70,7 @@ int ks_eventloop_add(struct ks_eventloop_ctx *ctx,
     ev.events = io->flags;
     ev.data.ptr = io;
 
-	if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_ADD, io->fd, &ev) == -1)
+    if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_ADD, io->fd, &ev) == -1)
     {
         err = KS_ERR;
         goto eventloop_add_err_out;
