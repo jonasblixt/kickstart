@@ -2,6 +2,12 @@ language: c
 compiler: gcc
 dist: xenial
 before_install:
-  - sudo apt install git libtool-bin libblkid-dev
+  - sudo apt install git
 script:
     - make -C src test
+jobs:
+    include:
+        -   stage: Code Coverage
+            after_success:
+                - cd src/
+                - bash <(curl -s https://codecov.io/bash)

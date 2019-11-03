@@ -19,7 +19,7 @@ LIBS += json-c
 LIBS += libnl-route-3.0
 LIBS += libnl-nf-3.0
 
-$(eval $(libs))
+# $(eval $(libs))
 
 ROOTDEVICE ?= mmcblk0
 
