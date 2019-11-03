@@ -1,0 +1,7 @@
+language: c
+compiler: gcc
+dist: xenial
+before_install:
+  - sudo apt install git libtool-bin libblkid-dev
+script:
+    - make -C src test

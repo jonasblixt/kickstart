@@ -38,12 +38,9 @@ OBJS     += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SRCS))
 
 DEPS = $(OBJS:%.o=%.d)
 
-ifdef CODE_COV
-	CFLAGS += -fprofile-arcs -ftest-coverage
-endif
-
 ifndef BOARD
-$(error BOARD not defined)
+BOARD = test
+CFLAGS += -fprofile-arcs -ftest-coverage
 endif
 
 BUILD_DIR = build-$(BOARD)
@@ -70,7 +67,8 @@ install: all
 	@install -m 755 $(BUILD_DIR)/$(TARGET_BIN) $(PREFIX)
 
 clean:
-	@-rm -rf $(BUILD_DIR)/
+	@-rm -rf build/
+	@-rm -rf build-*/
 
 test: $(TEST_TARGETS)
 
