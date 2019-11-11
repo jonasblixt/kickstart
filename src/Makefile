@@ -9,6 +9,14 @@ TARGET_BIN  = kickstart
 
 KS_SYSROOT ?= /sdk
 
+ifndef BOARD
+BOARD = test
+CFLAGS += -fprofile-arcs -ftest-coverage
+endif
+
+BUILD_DIR = build-$(BOARD)
+
+$(shell mkdir -p $(BUILD_DIR))
 include make/common.mk
 include make/test.mk
 
@@ -38,14 +46,6 @@ OBJS     += $(patsubst %.S, $(BUILD_DIR)/%.o, $(ASM_SRCS))
 
 DEPS = $(OBJS:%.o=%.d)
 
-ifndef BOARD
-BOARD = test
-CFLAGS += -fprofile-arcs -ftest-coverage
-endif
-
-BUILD_DIR = build-$(BOARD)
-
-$(shell mkdir -p $(BUILD_DIR))
 
 include board/$(BOARD)/makefile.mk
 
@@ -62,7 +62,7 @@ $(BUILD_DIR)/%.o: %.c
 	@echo CC $<
 	@mkdir -p $(@D)
 	@$(CC) -c $(CFLAGS) $< -o $@
-	$(info output = $@) 
+
 install: all
 	@install -m 755 $(BUILD_DIR)/$(TARGET_BIN) $(PREFIX)
 
@@ -72,6 +72,7 @@ clean:
 
 test: $(TEST_TARGETS)
 
-$(info $(LOG_OBJS))
+gcovr:
+	@gcovr --exclude test --exclude build-test --exclude 3pp
 
 -include $(DEPS)

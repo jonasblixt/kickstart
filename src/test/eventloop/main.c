@@ -6,18 +6,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "../common/ev_fixture.h"
-#include "__mocks__.h"
-
-TEST(ev_loop_init)
-{
-    struct ks_eventloop_ctx ctx;
-    int rc = -1;
-
-    rc = ks_eventloop_init(&ctx);
-
-    ASSERT_EQ(rc, KS_OK);
-}
 
 
 static bool timer_cb_fired = false;
@@ -250,13 +238,15 @@ void test_pipe_cb(void *data, struct ks_eventloop_io *io)
     ASSERT_MEMORY(bfr, "Hello world", read_bytes);
 }
 
-TEST(ev_loop_test_pipe, fixture_ctx)
+TEST(ev_loop_test_pipe)
 {
     int rc;
     int fds[2];
+    struct ks_eventloop_ctx ctx;
     const char msg[] = "Hello world";
 
-    GET_FIXTURE(fixture_ctx);
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
 
     rc = pipe(fds);
     ASSERT_EQ(rc, 0);
@@ -271,23 +261,18 @@ TEST(ev_loop_test_pipe, fixture_ctx)
     size_t written = write(fds[1], msg, sizeof(msg));
     ASSERT_EQ(written, sizeof(msg));
 
-    rc = ks_eventloop_add(fixture_ctx, io);
+    rc = ks_eventloop_add(&ctx, io);
     ASSERT_EQ(rc, KS_OK);
 
 
-    rc = ks_eventloop_loop_once(fixture_ctx,500);
+    rc = ks_eventloop_loop_once(&ctx,500);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_eventloop_remove(fixture_ctx, io);
+
+    rc = ks_eventloop_remove(&ctx, io);
     ASSERT_EQ(rc, KS_OK);
 
     close(fds[0]);
     close(fds[1]);
 }
 
-TEST(example)
-{
-    MOCK(time)->mock_return(42);
-
-    ASSERT_EQ(time(NULL), 42);
-}

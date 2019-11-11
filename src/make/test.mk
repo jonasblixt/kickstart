@@ -2,25 +2,16 @@ TEST_TARGETS =
 TESTS =
 
 TEST_BASE_SRC = 3pp/narwhal/narwhal.c
-CFLAGS += -I 3pp/narwhal
+CFLAGS += -I 3pp/narwhal -I build-test/
 
 -include $(wildcard test/*/makefile.mk)
 
 %-test-target:
 	$(info -------- TEST $(TEST_NAME) BEGIN --------)
-	@$(BUILD_DIR)/test-$(TEST_NAME)
-%-test-mock:
-	$(info MOCK $(call LC,$(TEST_NAME)))
-	@$(CC) $(CFLAGS) -E test/$(call LC,$(TEST_NAME))/*.c | \
-		narmock -g -d test/$(call LC,$(TEST_NAME))/
-%-test-link:
-	@$(CC) $(CFLAGS) $($(TEST_NAME)_OBJS) $($(2)_LDFLAGS) \
-		$(shell narmock -f -d test/$(call LC,$(TEST_NAME))/) \
-		-o $(BUILD_DIR)/test-$(TEST_NAME)
+	@$(BUILD_DIR)/test/test-$(TEST_NAME)
 
 define testcase-inner
-$(2)_SRCS += test/$(1)/__mocks__.c
-
+$(2)_SRCS += build-test/test/$(1)/__mocks__.c
 $(2)_OBJS  = $$(patsubst %.c, $$(BUILD_DIR)/%.o, $$(TEST_BASE_SRC))
 $(2)_OBJS += $$(patsubst %.c, $$(BUILD_DIR)/%.o, $$($(2)_SRCS))
 
@@ -32,9 +23,21 @@ $(1)-test-target: TEST_NAME=$(2)
 $(1)-test-link: TEST_NAME=$(2)
 $(1)-test-mock: TEST_NAME=$(2)
 
-TEST_TARGETS += $(1)-test-mock
+build-test/test/$(1)/__mocks__.c: $($(2)_SRCS)
+	$$(info MOCK $(1))
+	@mkdir -p build-test/test/$(1)
+	@$(CC) $$(CFLAGS) -E test/$(1)/*.c | \
+		narmock -g -d build-test/test/$(1)/
+
+build-test/test/test-$(2): $$($(2)_OBJS)
+	$$(info LINK $(1))
+	@$(CC) $$(CFLAGS) $$($(2)_OBJS) $$($(2)_LDFLAGS) \
+		$$(shell narmock -f -d test/$(1)/) \
+		-o build-test/test/test-$(2)
+
+TEST_TARGETS += $$(BUILD_DIR)/test/$(1)/__mocks__.c
 TEST_TARGETS += $$($(2)_OBJS)
-TEST_TARGETS += $(1)-test-link
+TEST_TARGETS += $$(BUILD_DIR)/test/test-$(2)
 TEST_TARGETS += $(1)-test-target
 
 endef
