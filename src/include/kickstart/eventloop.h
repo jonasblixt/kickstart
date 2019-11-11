@@ -36,6 +36,8 @@ int ks_eventloop_add(struct ks_eventloop_ctx *ctx,
 int ks_eventloop_remove(struct ks_eventloop_ctx *ctx,
                         struct ks_eventloop_io *io);
 
+int ks_eventloop_io_oneshot(struct ks_eventloop_ctx *ctx,
+                        struct ks_eventloop_io *io);
 int ks_eventloop_loop_once(struct ks_eventloop_ctx *ctx, int timeout_ms);
 int ks_eventloop_loop(struct ks_eventloop_ctx *ctx);
 

@@ -128,3 +128,12 @@ int ks_eventloop_loop(struct ks_eventloop_ctx *ctx)
 
     return KS_OK;
 }
+
+int ks_eventloop_io_oneshot(struct ks_eventloop_ctx *ctx,
+                        struct ks_eventloop_io *io)
+{
+    struct epoll_event ev;
+    ev.data.ptr = io;
+    ev.events = io->flags | EPOLLONESHOT;
+    return epoll_ctl(ctx->ep_fd, EPOLL_CTL_MOD, io->fd, &ev);
+}
