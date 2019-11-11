@@ -1,11 +1,10 @@
-language: c
-compiler: gcc
-dist: bionic
+language: python
+
 python:
     - "3.7"
 before_install:
-    - sudo apt install git gcc make python3 python3.7 python3-pip
-    - python3.7 -m pip install narmock==0.2.12
+    - sudo apt install git gcc make
+    - pip install nala==0.5.0
 script:
     - make -C src test
 jobs:
