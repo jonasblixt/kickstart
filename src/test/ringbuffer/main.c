@@ -1,4 +1,4 @@
-#include <narwhal.h>
+#include <nala.h>
 #include <kickstart/ringbuffer.h>
 
 TEST(rb_test1)

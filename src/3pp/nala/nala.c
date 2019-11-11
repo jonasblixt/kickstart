@@ -39,11 +39,11 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define NARWHAL_SUBPROCESS_VERSION "0.3.0"
+#define NALA_SUBPROCESS_VERSION "0.3.0"
 
-typedef void (*narwhal_subprocess_entry_t)(void *arg_p);
+typedef void (*nala_subprocess_entry_t)(void *arg_p);
 
-struct narwhal_subprocess_output_t {
+struct nala_subprocess_output_t {
     /* Always null-terminated. */
     char *buf_p;
     /* Buffer length, not incuding last null-termination. */
@@ -52,11 +52,11 @@ struct narwhal_subprocess_output_t {
     size_t size;
 };
 
-struct narwhal_subprocess_result_t {
+struct nala_subprocess_result_t {
     int exit_code;
     int signal_number;
-    struct narwhal_subprocess_output_t stdout;
-    struct narwhal_subprocess_output_t stderr;
+    struct nala_subprocess_output_t stdout;
+    struct nala_subprocess_output_t stderr;
 };
 
 /**
@@ -64,45 +64,45 @@ struct narwhal_subprocess_result_t {
  * captured subprocess' exit code, or NULL if the subprocess could not
  * be started.
  */
-struct narwhal_subprocess_result_t *narwhal_subprocess_call(narwhal_subprocess_entry_t entry,
-                                            void *arg_p);
+struct nala_subprocess_result_t *nala_subprocess_call(nala_subprocess_entry_t entry,
+                                                      void *arg_p);
 
 /**
  * Call given function with given argument in a subprocess. Returns
  * captured subprocess' stdout, stderr and exit code, or NULL if the
  * subprocess could not be started.
  */
-struct narwhal_subprocess_result_t *narwhal_subprocess_call_output(narwhal_subprocess_entry_t entry,
-                                                   void *arg_p);
+struct nala_subprocess_result_t *nala_subprocess_call_output(nala_subprocess_entry_t entry,
+                                                             void *arg_p);
 
 /**
  * Execute given command in a subprocess. Returns captured subprocess'
  * exit code, or NULL if the subprocess could not be started.
  */
-struct narwhal_subprocess_result_t *narwhal_subprocess_exec(const char *command_p);
+struct nala_subprocess_result_t *nala_subprocess_exec(const char *command_p);
 
 /**
  * Execute given command in a subprocess. Returns captured subprocess'
  * stdout, stderr and exit code, or NULL if the subprocess could not
  * be started.
  */
-struct narwhal_subprocess_result_t *narwhal_subprocess_exec_output(const char *command_p);
+struct nala_subprocess_result_t *nala_subprocess_exec_output(const char *command_p);
 
 /**
  * Returns true if the subprocess was started and exited with 0,
  * otherwise false.
  */
-bool narwhal_subprocess_completed_successfully(struct narwhal_subprocess_result_t *result_p);
+bool nala_subprocess_completed_successfully(struct nala_subprocess_result_t *result_p);
 
 /**
  * Print subprocess exit code, stdout and stderr.
  */
-void narwhal_subprocess_result_print(struct narwhal_subprocess_result_t *self_p);
+void nala_subprocess_result_print(struct nala_subprocess_result_t *self_p);
 
 /**
  * Free given result.
  */
-void narwhal_subprocess_result_free(struct narwhal_subprocess_result_t *self_p);
+void nala_subprocess_result_free(struct nala_subprocess_result_t *self_p);
 
 // #include "traceback.h"
 /*
@@ -133,117 +133,117 @@ void narwhal_subprocess_result_free(struct narwhal_subprocess_result_t *self_p);
  * This file is part of the traceback project.
  */
 
-#define NARWHAL_TRACEBACK_VERSION "0.1.0"
+#define NALA_TRACEBACK_VERSION "0.1.0"
 
 /**
  * Print a traceback.
  */
-void narwhal_traceback_print(const char *prefix_p);
+void nala_traceback_print(const char *prefix_p);
 
-#include "narwhal.h"
+#include "nala.h"
 // #include "diff/diff.h"
-#ifndef NARWHAL_DIFF_H
-#define NARWHAL_DIFF_H
+#ifndef NALA_DIFF_H
+#define NALA_DIFF_H
 
 #include <stdlib.h>
 
 // #include "types.h"
-#ifndef NARWHAL_DIFF_TYPES_H
-#define NARWHAL_DIFF_TYPES_H
+#ifndef NALA_DIFF_TYPES_H
+#define NALA_DIFF_TYPES_H
 
-typedef struct NarwhalDiffMatrix NarwhalDiffMatrix;
-typedef enum NarwhalDiffChunkType NarwhalDiffChunkType;
-typedef struct NarwhalDiff NarwhalDiff;
-typedef struct NarwhalDiffChunk NarwhalDiffChunk;
+typedef struct NalaDiffMatrix NalaDiffMatrix;
+typedef enum NalaDiffChunkType NalaDiffChunkType;
+typedef struct NalaDiff NalaDiff;
+typedef struct NalaDiffChunk NalaDiffChunk;
 
 #endif
 
 
-struct NarwhalDiffMatrix
+struct NalaDiffMatrix
 {
     size_t rows;
     size_t columns;
     int *content;
 };
 
-enum NarwhalDiffChunkType
+enum NalaDiffChunkType
 {
-    NARWHAL_DIFF_CHUNK_TYPE_MATCHED,
-    NARWHAL_DIFF_CHUNK_TYPE_ADDED,
-    NARWHAL_DIFF_CHUNK_TYPE_REPLACED,
-    NARWHAL_DIFF_CHUNK_TYPE_DELETED
+    NALA_DIFF_CHUNK_TYPE_MATCHED,
+    NALA_DIFF_CHUNK_TYPE_ADDED,
+    NALA_DIFF_CHUNK_TYPE_REPLACED,
+    NALA_DIFF_CHUNK_TYPE_DELETED
 };
 
-struct NarwhalDiff
+struct NalaDiff
 {
     size_t size;
-    NarwhalDiffChunk *chunks;
+    NalaDiffChunk *chunks;
 };
 
-struct NarwhalDiffChunk
+struct NalaDiffChunk
 {
-    NarwhalDiffChunkType type;
+    NalaDiffChunkType type;
     size_t original_start;
     size_t original_end;
     size_t modified_start;
     size_t modified_end;
 };
 
-NarwhalDiffMatrix *narwhal_new_diff_matrix(size_t rows, size_t columns);
-NarwhalDiffMatrix *narwhal_new_diff_matrix_from_lengths(size_t original_length,
+NalaDiffMatrix *nala_new_diff_matrix(size_t rows, size_t columns);
+NalaDiffMatrix *nala_new_diff_matrix_from_lengths(size_t original_length,
                                                         size_t modified_lengths);
-void narwhal_diff_matrix_fill_from_strings(NarwhalDiffMatrix *diff_matrix,
+void nala_diff_matrix_fill_from_strings(NalaDiffMatrix *diff_matrix,
                                            const char *original,
                                            const char *modified);
-void narwhal_diff_matrix_fill_from_lines(NarwhalDiffMatrix *diff_matrix,
+void nala_diff_matrix_fill_from_lines(NalaDiffMatrix *diff_matrix,
                                          const char *original,
                                          const char *modified);
-NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix);
+NalaDiff nala_diff_matrix_get_diff(const NalaDiffMatrix *diff_matrix);
 
-size_t narwhal_diff_matrix_index(const NarwhalDiffMatrix *diff_matrix, size_t row, size_t column);
-int narwhal_diff_matrix_get(const NarwhalDiffMatrix *diff_matrix, size_t row, size_t column);
-void narwhal_diff_matrix_set(const NarwhalDiffMatrix *diff_matrix,
+size_t nala_diff_matrix_index(const NalaDiffMatrix *diff_matrix, size_t row, size_t column);
+int nala_diff_matrix_get(const NalaDiffMatrix *diff_matrix, size_t row, size_t column);
+void nala_diff_matrix_set(const NalaDiffMatrix *diff_matrix,
                              size_t row,
                              size_t column,
                              int value);
 
-NarwhalDiff narwhal_diff_strings_lengths(const char *original,
+NalaDiff nala_diff_strings_lengths(const char *original,
                                          size_t original_length,
                                          const char *modified,
                                          size_t modified_length);
-NarwhalDiff narwhal_diff_strings(const char *original, const char *modified);
-NarwhalDiff narwhal_diff_lines(const char *original, const char *modified);
+NalaDiff nala_diff_strings(const char *original, const char *modified);
+NalaDiff nala_diff_lines(const char *original, const char *modified);
 
-void narwhal_free_diff_matrix(NarwhalDiffMatrix *diff_matrix);
+void nala_free_diff_matrix(NalaDiffMatrix *diff_matrix);
 
 #endif
 
 // #include "hexdump/hexdump.h"
-#ifndef NARWHAL_HEXDUMP_H
-#define NARWHAL_HEXDUMP_H
+#ifndef NALA_HEXDUMP_H
+#define NALA_HEXDUMP_H
 
 #include <stdint.h>
 #include <stdlib.h>
 
-char *narwhal_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row);
-size_t narwhal_optimal_bytes_per_row(size_t element_size, size_t target, size_t range);
+char *nala_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row);
+size_t nala_optimal_bytes_per_row(size_t element_size, size_t target, size_t range);
 
 #endif
 
 // #include "utils.h"
-#ifndef NARWHAL_UTILS_H
-#define NARWHAL_UTILS_H
+#ifndef NALA_UTILS_H
+#define NALA_UTILS_H
 
 #include <stdbool.h>
 #include <stdio.h>
 
-size_t narwhal_util_read_stream(FILE *stream, char **buffer);
-bool narwhal_is_short_string(const char *string);
-int narwhal_min_int(int a, int b);
-size_t narwhal_min_size_t(size_t a, size_t b);
-size_t narwhal_count_chars(const char *string, char chr);
-const char *narwhal_next_line(const char *string);
-const char *narwhal_next_lines(const char *string, size_t lines);
+size_t nala_util_read_stream(FILE *stream, char **buffer);
+bool nala_is_short_string(const char *string);
+int nala_min_int(int a, int b);
+size_t nala_min_size_t(size_t a, size_t b);
+size_t nala_count_chars(const char *string, char chr);
+const char *nala_next_line(const char *string);
+const char *nala_next_lines(const char *string, size_t lines);
 
 #endif
 
@@ -266,8 +266,8 @@ const char *narwhal_next_lines(const char *string, size_t lines);
     ANSI_RESET ANSI_COLOR_##color ANSI_BOLD __VA_ARGS__ ANSI_RESET
 
 struct tests_t {
-    struct narwhal_test_t *head_p;
-    struct narwhal_test_t *tail_p;
+    struct nala_test_t *head_p;
+    struct nala_test_t *tail_p;
 };
 
 struct capture_output_t {
@@ -279,11 +279,11 @@ struct capture_output_t {
     FILE *original_file_p;
 };
 
-static struct narwhal_test_t *current_test_p = NULL;
+static struct nala_test_t *current_test_p = NULL;
 
 static struct tests_t tests = {
-    .head_p = NULL,
-    .tail_p = NULL
+                               .head_p = NULL,
+                               .tail_p = NULL
 };
 
 static struct capture_output_t capture_stdout;
@@ -293,9 +293,9 @@ int setup(void);
 
 int teardown(void);
 
-void narmock_assert_all_mocks_completed(void);
+void nala_assert_all_mocks_completed(void);
 
-__attribute__ ((weak)) void narmock_assert_all_mocks_completed(void)
+__attribute__ ((weak)) void nala_assert_all_mocks_completed(void)
 {
 }
 
@@ -398,7 +398,7 @@ static float timeval_to_ms(struct timeval *timeval_p)
     return (res);
 }
 
-static void print_signal_failure(struct narwhal_test_t *test_p)
+static void print_signal_failure(struct nala_test_t *test_p)
 {
     printf("\n");
     printf("%s failed:\n\n", test_p->name_p);
@@ -455,7 +455,7 @@ static void print_location_context(const char *filename_p, size_t line_number)
     fclose(file_p);
 }
 
-static void print_test_results(struct narwhal_test_t *test_p,
+static void print_test_results(struct nala_test_t *test_p,
                                float elapsed_time_ms)
 {
     int total;
@@ -512,10 +512,10 @@ static void print_test_results(struct narwhal_test_t *test_p,
 
 static void test_entry(void *arg_p)
 {
-    struct narwhal_test_t *test_p;
+    struct nala_test_t *test_p;
     int res;
 
-    test_p = (struct narwhal_test_t *)arg_p;
+    test_p = (struct nala_test_t *)arg_p;
 
     capture_output_init(&capture_stdout, stdout);
     capture_output_init(&capture_stderr, stderr);
@@ -527,7 +527,7 @@ static void test_entry(void *arg_p)
         res = teardown();
 
         if (res == 0) {
-            narmock_assert_all_mocks_completed();
+            nala_assert_all_mocks_completed();
         }
     }
 
@@ -537,7 +537,7 @@ static void test_entry(void *arg_p)
     exit(res == 0 ? 0 : 1);
 }
 
-static int run_tests(struct narwhal_test_t *tests_p)
+static int run_tests(struct nala_test_t *tests_p)
 {
     int res;
     struct timeval start_time;
@@ -545,8 +545,8 @@ static int run_tests(struct narwhal_test_t *tests_p)
     struct timeval test_start_time;
     struct timeval test_end_time;
     struct timeval elapsed_time;
-    struct narwhal_test_t *test_p;
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_test_t *test_p;
+    struct nala_subprocess_result_t *result_p;
 
     test_p = tests_p;
     gettimeofday(&start_time, NULL);
@@ -557,11 +557,11 @@ static int run_tests(struct narwhal_test_t *tests_p)
         current_test_p = test_p;
         test_p->before_fork_func();
 
-        result_p = narwhal_subprocess_call(test_entry, test_p);
+        result_p = nala_subprocess_call(test_entry, test_p);
 
         test_p->exit_code = result_p->exit_code;
         test_p->signal_number = result_p->signal_number;
-        narwhal_subprocess_result_free(result_p);
+        nala_subprocess_result_free(result_p);
 
         if (test_p->exit_code != 0) {
             res = 1;
@@ -585,12 +585,12 @@ static int run_tests(struct narwhal_test_t *tests_p)
     return (res);
 }
 
-bool narwhal_check_string_equal(const char *actual_p, const char *expected_p)
+bool nala_check_string_equal(const char *actual_p, const char *expected_p)
 {
     return (strcmp(actual_p, expected_p) == 0);
 }
 
-const char *narwhal_format(const char *format_p, ...)
+const char *nala_format(const char *format_p, ...)
 {
     char buf[1024];
     va_list vl;
@@ -604,20 +604,20 @@ const char *narwhal_format(const char *format_p, ...)
 }
 
 static const char *display_inline_diff(FILE *file_p,
-                                       const NarwhalDiff *inline_diff,
+                                       const NalaDiff *inline_diff,
                                        size_t lines,
                                        const char *string,
                                        size_t *line_number,
                                        bool use_original)
 {
-    NarwhalDiffChunk *inline_chunk = &inline_diff->chunks[0];
+    NalaDiffChunk *inline_chunk = &inline_diff->chunks[0];
 
     size_t line_index = 0;
     size_t index = 0;
 
     for (size_t i = 0; i < lines; i++)
         {
-            const char *next = narwhal_next_line(string);
+            const char *next = nala_next_line(string);
             size_t line_length = (size_t)(next - string);
 
             char line_prefix[64];
@@ -645,11 +645,11 @@ static const char *display_inline_diff(FILE *file_p,
                         use_original ? inline_chunk->original_end : inline_chunk->modified_end;
 
                     size_t start = index - line_index;
-                    size_t end = narwhal_min_size_t(chunk_end - line_index, line_length);
+                    size_t end = nala_min_size_t(chunk_end - line_index, line_length);
 
                     size_t characters = end - start;
 
-                    if (inline_chunk->type == NARWHAL_DIFF_CHUNK_TYPE_MATCHED)
+                    if (inline_chunk->type == NALA_DIFF_CHUNK_TYPE_MATCHED)
                         {
                             fprintf(file_p, "%.*s", (int)characters, string + index - line_index);
                         }
@@ -700,23 +700,23 @@ static void print_string_diff(FILE *file_p,
 {
     fprintf(file_p, "  Diff:\n\n");
 
-    NarwhalDiff diff = narwhal_diff_lines(original, modified);
+    NalaDiff diff = nala_diff_lines(original, modified);
 
     size_t line_number = 1;
 
     for (size_t chunk_index = 0; chunk_index < diff.size; chunk_index++)
         {
-            NarwhalDiffChunk *chunk = &diff.chunks[chunk_index];
+            NalaDiffChunk *chunk = &diff.chunks[chunk_index];
 
             size_t original_lines = chunk->original_end - chunk->original_start;
             size_t modified_lines = chunk->modified_end - chunk->modified_start;
 
-            if (chunk->type == NARWHAL_DIFF_CHUNK_TYPE_MATCHED)
+            if (chunk->type == NALA_DIFF_CHUNK_TYPE_MATCHED)
                 {
                     for (size_t i = 0; i < original_lines; i++)
                         {
-                            const char *original_next = narwhal_next_line(original);
-                            const char *modified_next = narwhal_next_line(modified);
+                            const char *original_next = nala_next_line(original);
+                            const char *modified_next = nala_next_line(modified);
 
                             if (original_lines < 7 || (i < 2 && chunk_index > 0) ||
                                 (original_lines - i < 3 && chunk_index < diff.size - 1))
@@ -734,19 +734,19 @@ static void print_string_diff(FILE *file_p,
                             modified = modified_next + 1;
                         }
                 }
-            else if (chunk->type == NARWHAL_DIFF_CHUNK_TYPE_REPLACED)
+            else if (chunk->type == NALA_DIFF_CHUNK_TYPE_REPLACED)
                 {
-                    const char *original_end = narwhal_next_lines(original, original_lines);
-                    const char *modified_end = narwhal_next_lines(modified, modified_lines);
+                    const char *original_end = nala_next_lines(original, original_lines);
+                    const char *modified_end = nala_next_lines(modified, modified_lines);
 
                     size_t original_length = (size_t)(original_end - original);
                     size_t modified_length = (size_t)(modified_end - modified);
 
-                    NarwhalDiff inline_diff =
-                        narwhal_diff_strings_lengths(original,
-                                                     original_length,
-                                                     modified,
-                                                     modified_length);
+                    NalaDiff inline_diff =
+                        nala_diff_strings_lengths(original,
+                                                  original_length,
+                                                  modified,
+                                                  modified_length);
 
                     original = display_inline_diff(file_p,
                                                    &inline_diff,
@@ -763,11 +763,11 @@ static void print_string_diff(FILE *file_p,
 
                     free(inline_diff.chunks);
                 }
-            else if (chunk->type == NARWHAL_DIFF_CHUNK_TYPE_DELETED)
+            else if (chunk->type == NALA_DIFF_CHUNK_TYPE_DELETED)
                 {
                     for (size_t i = 0; i < original_lines; i++)
                         {
-                            const char *original_next = narwhal_next_line(original);
+                            const char *original_next = nala_next_line(original);
 
                             char line_prefix[64];
                             snprintf(line_prefix,
@@ -783,11 +783,11 @@ static void print_string_diff(FILE *file_p,
                             original = original_next + 1;
                         }
                 }
-            else if (chunk->type == NARWHAL_DIFF_CHUNK_TYPE_ADDED)
+            else if (chunk->type == NALA_DIFF_CHUNK_TYPE_ADDED)
                 {
                     for (size_t i = 0; i < modified_lines; i++)
                         {
-                            const char *modified_next = narwhal_next_line(modified);
+                            const char *modified_next = nala_next_line(modified);
 
                             char line_prefix[64];
                             snprintf(line_prefix,
@@ -809,7 +809,7 @@ static void print_string_diff(FILE *file_p,
     free(diff.chunks);
 }
 
-const char *narwhal_format_string(const char *format_p, ...)
+const char *nala_format_string(const char *format_p, ...)
 {
     size_t size;
     char *buf_p;
@@ -833,9 +833,9 @@ const char *narwhal_format_string(const char *format_p, ...)
     return (buf_p);
 }
 
-const char *narwhal_format_memory(const void *left_p,
-                                  const void *right_p,
-                                  size_t size)
+const char *nala_format_memory(const void *left_p,
+                               const void *right_p,
+                               size_t size)
 {
     size_t file_size;
     char *buf_p;
@@ -845,8 +845,8 @@ const char *narwhal_format_memory(const void *left_p,
 
     file_p = open_memstream(&buf_p, &file_size);
     fprintf(file_p, "Memory mismatch. See diff for details.\n");
-    left_hexdump_p = narwhal_hexdump(left_p, size, 16);
-    right_hexdump_p = narwhal_hexdump(right_p, size, 16);
+    left_hexdump_p = nala_hexdump(left_p, size, 16);
+    right_hexdump_p = nala_hexdump(right_p, size, 16);
     print_string_diff(file_p, right_hexdump_p, left_hexdump_p);
     free(left_hexdump_p);
     free(right_hexdump_p);
@@ -856,18 +856,18 @@ const char *narwhal_format_memory(const void *left_p,
     return (buf_p);
 }
 
-bool narwhal_check_substring(const char *actual_p, const char *expected_p)
+bool nala_check_substring(const char *actual_p, const char *expected_p)
 {
     return ((actual_p != NULL)
             && (expected_p != NULL)
             && (strstr(actual_p, expected_p) != NULL));
 }
 
-void narwhal_test_failure(const char *file_p,
-                          int line,
-                          const char *message_p)
+void nala_test_failure(const char *file_p,
+                       int line,
+                       const char *message_p)
 {
-    narwhal_capture_output_stop();
+    nala_capture_output_stop();
     capture_output_destroy(&capture_stdout);
     capture_output_destroy(&capture_stderr);
     printf("\n");
@@ -875,24 +875,24 @@ void narwhal_test_failure(const char *file_p,
     printf("  Location: " COLOR_BOLD(GREEN, "%s:%d:\n"), file_p, line);
     printf("  Error:    %s\n", message_p);
     print_location_context(file_p, (size_t)line);
-    narwhal_traceback_print("  ");
+    nala_traceback_print("  ");
     printf("\n");
     exit(1);
 }
 
-void narwhal_capture_output_start(char **output_pp, char **errput_pp)
+void nala_capture_output_start(char **output_pp, char **errput_pp)
 {
     capture_output_start(&capture_stdout, output_pp);
     capture_output_start(&capture_stderr, errput_pp);
 }
 
-void narwhal_capture_output_stop()
+void nala_capture_output_stop()
 {
     capture_output_stop(&capture_stdout);
     capture_output_stop(&capture_stderr);
 }
 
-void narwhal_register_test(struct narwhal_test_t *test_p)
+void nala_register_test(struct nala_test_t *test_p)
 {
     if (tests.head_p == NULL) {
         tests.head_p = test_p;
@@ -903,7 +903,7 @@ void narwhal_register_test(struct narwhal_test_t *test_p)
     tests.tail_p = test_p;
 }
 
-int narwhal_run_tests()
+int nala_run_tests()
 {
     return (run_tests(tests.head_p));
 }
@@ -920,7 +920,7 @@ __attribute__((weak)) int teardown(void)
 
 __attribute__((weak)) int main(void)
 {
-    return (narwhal_run_tests());
+    return (nala_run_tests());
 }
 /*
  * The MIT License (MIT)
@@ -965,7 +965,7 @@ static void fatal_error(const char *message_p)
     exit(1);
 }
 
-static int output_init(struct narwhal_subprocess_output_t *self_p)
+static int output_init(struct nala_subprocess_output_t *self_p)
 {
     int res;
 
@@ -982,7 +982,7 @@ static int output_init(struct narwhal_subprocess_output_t *self_p)
     return (res);
 }
 
-static void output_append(struct narwhal_subprocess_output_t *self_p, int fd)
+static void output_append(struct nala_subprocess_output_t *self_p, int fd)
 {
     ssize_t res;
 
@@ -1009,7 +1009,7 @@ static void output_append(struct narwhal_subprocess_output_t *self_p, int fd)
     }
 }
 
-static void output_print(struct narwhal_subprocess_output_t *self_p,
+static void output_print(struct nala_subprocess_output_t *self_p,
                          const char *name_p)
 {
     printf("%s (length: %ld):\n", name_p, self_p->length);
@@ -1029,9 +1029,9 @@ static void close_fds(int *fds_p)
     close(fds_p[1]);
 }
 
-static struct narwhal_subprocess_result_t *result_new(void)
+static struct nala_subprocess_result_t *result_new(void)
 {
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_subprocess_result_t *result_p;
     int res;
 
     result_p = malloc(sizeof(*result_p));
@@ -1065,15 +1065,15 @@ static struct narwhal_subprocess_result_t *result_new(void)
     return (NULL);
 }
 
-static void call_child(narwhal_subprocess_entry_t entry,
+static void call_child(nala_subprocess_entry_t entry,
                        void *arg_p)
 {
     entry(arg_p);
 }
 
-static struct narwhal_subprocess_result_t *call_parent(pid_t child_pid)
+static struct nala_subprocess_result_t *call_parent(pid_t child_pid)
 {
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_subprocess_result_t *result_p;
     int status;
 
     result_p = result_new();
@@ -1093,7 +1093,7 @@ static struct narwhal_subprocess_result_t *call_parent(pid_t child_pid)
     return (result_p);
 }
 
-static void call_output_child(narwhal_subprocess_entry_t entry,
+static void call_output_child(nala_subprocess_entry_t entry,
                               void *arg_p,
                               int *stdoutfds_p,
                               int *stderrfds_p)
@@ -1103,11 +1103,11 @@ static void call_output_child(narwhal_subprocess_entry_t entry,
     call_child(entry, arg_p);
 }
 
-static struct narwhal_subprocess_result_t *call_output_parent(pid_t child_pid,
-                                                      int *stdoutfds_p,
-                                                      int *stderrfds_p)
+static struct nala_subprocess_result_t *call_output_parent(pid_t child_pid,
+                                                           int *stdoutfds_p,
+                                                           int *stderrfds_p)
 {
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_subprocess_result_t *result_p;
 
     /* Close write ends. */
     close(stdoutfds_p[1]);
@@ -1138,11 +1138,11 @@ static void exec_entry(const char *command_p)
     }
 }
 
-struct narwhal_subprocess_result_t *narwhal_subprocess_call(narwhal_subprocess_entry_t entry,
-                                            void *arg_p)
+struct nala_subprocess_result_t *nala_subprocess_call(nala_subprocess_entry_t entry,
+                                                      void *arg_p)
 {
     pid_t pid;
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_subprocess_result_t *result_p;
 
     fflush(stdout);
     fflush(stderr);
@@ -1161,13 +1161,13 @@ struct narwhal_subprocess_result_t *narwhal_subprocess_call(narwhal_subprocess_e
     return (result_p);
 }
 
-struct narwhal_subprocess_result_t *narwhal_subprocess_call_output(narwhal_subprocess_entry_t entry,
-                                                   void *arg_p)
+struct nala_subprocess_result_t *nala_subprocess_call_output(nala_subprocess_entry_t entry,
+                                                             void *arg_p)
 {
     pid_t pid;
     int stdoutfds[2];
     int stderrfds[2];
-    struct narwhal_subprocess_result_t *result_p;
+    struct nala_subprocess_result_t *result_p;
 
     fflush(stdout);
     fflush(stderr);
@@ -1202,31 +1202,31 @@ struct narwhal_subprocess_result_t *narwhal_subprocess_call_output(narwhal_subpr
     return (NULL);
 }
 
-struct narwhal_subprocess_result_t *narwhal_subprocess_exec(const char *command_p)
+struct nala_subprocess_result_t *nala_subprocess_exec(const char *command_p)
 {
-    return (narwhal_subprocess_call((narwhal_subprocess_entry_t)exec_entry,
-                            (void *)command_p));
+    return (nala_subprocess_call((nala_subprocess_entry_t)exec_entry,
+                                 (void *)command_p));
 }
 
-struct narwhal_subprocess_result_t *narwhal_subprocess_exec_output(const char *command_p)
+struct nala_subprocess_result_t *nala_subprocess_exec_output(const char *command_p)
 {
-    return (narwhal_subprocess_call_output((narwhal_subprocess_entry_t)exec_entry,
-                                   (void *)command_p));
+    return (nala_subprocess_call_output((nala_subprocess_entry_t)exec_entry,
+                                        (void *)command_p));
 }
 
-bool narwhal_subprocess_completed_successfully(struct narwhal_subprocess_result_t *result_p)
+bool nala_subprocess_completed_successfully(struct nala_subprocess_result_t *result_p)
 {
     return ((result_p != NULL) && (result_p->exit_code == 0));
 }
 
-void narwhal_subprocess_result_print(struct narwhal_subprocess_result_t *self_p)
+void nala_subprocess_result_print(struct nala_subprocess_result_t *self_p)
 {
     printf("exit_code: %d\n", self_p->exit_code);
     output_print(&self_p->stdout, "stdout");
     output_print(&self_p->stderr, "stderr");
 }
 
-void narwhal_subprocess_result_free(struct narwhal_subprocess_result_t *self_p)
+void nala_subprocess_result_free(struct nala_subprocess_result_t *self_p)
 {
     free(self_p->stdout.buf_p);
     free(self_p->stderr.buf_p);
@@ -1269,7 +1269,7 @@ void narwhal_subprocess_result_free(struct narwhal_subprocess_result_t *self_p)
 
 #define DEPTH_MAX 100
 
-void narwhal_traceback_print(const char *prefix_p)
+void nala_traceback_print(const char *prefix_p)
 {
     int depth;
     void *addresses[DEPTH_MAX];
@@ -1325,7 +1325,7 @@ void narwhal_traceback_print(const char *prefix_p)
 #include <string.h>
 #include <sys/types.h>
 
-size_t narwhal_util_read_stream(FILE *stream, char **output_buffer)
+size_t nala_util_read_stream(FILE *stream, char **output_buffer)
 {
     char buffer[256];
     size_t output_length = 0;
@@ -1333,16 +1333,14 @@ size_t narwhal_util_read_stream(FILE *stream, char **output_buffer)
     size_t read_count = fread(buffer, 1, sizeof(buffer) - 1, stream);
     buffer[read_count] = '\0';
 
-    if (read_count > 0)
-    {
+    if (read_count > 0) {
         *output_buffer = malloc(read_count + 1);
         memcpy(*output_buffer, buffer, read_count + 1);
     }
 
     output_length = read_count;
 
-    while (read_count + 1 == sizeof(buffer))
-    {
+    while (read_count + 1 == sizeof(buffer)) {
         read_count = fread(buffer, 1, sizeof(buffer) - 1, stream);
         buffer[read_count] = '\0';
         output_length += read_count;
@@ -1354,29 +1352,27 @@ size_t narwhal_util_read_stream(FILE *stream, char **output_buffer)
     return output_length;
 }
 
-bool narwhal_is_short_string(const char *string)
+bool nala_is_short_string(const char *string)
 {
     return strlen(string) < 64 && strchr(string, '\n') == NULL;
 }
 
-int narwhal_min_int(int a, int b)
+int nala_min_int(int a, int b)
 {
     return a < b ? a : b;
 }
 
-size_t narwhal_min_size_t(size_t a, size_t b)
+size_t nala_min_size_t(size_t a, size_t b)
 {
     return a < b ? a : b;
 }
 
-size_t narwhal_count_chars(const char *string, char chr)
+size_t nala_count_chars(const char *string, char chr)
 {
     size_t count = 0;
 
-    for (size_t i = 0; string[i] != '\0'; i++)
-    {
-        if (string[i] == chr)
-        {
+    for (size_t i = 0; string[i] != '\0'; i++) {
+        if (string[i] == chr) {
             count++;
         }
     }
@@ -1384,27 +1380,23 @@ size_t narwhal_count_chars(const char *string, char chr)
     return count;
 }
 
-const char *narwhal_next_line(const char *string)
+const char *nala_next_line(const char *string)
 {
     char *next_line = strchr(string, '\n');
 
-    if (next_line != NULL)
-    {
+    if (next_line != NULL) {
         return next_line;
-    }
-    else
-    {
+    } else {
         return string + strlen(string);
     }
 }
 
-const char *narwhal_next_lines(const char *string, size_t lines)
+const char *nala_next_lines(const char *string, size_t lines)
 {
     const char *next_line = string;
 
-    for (size_t i = 0; i < lines; i++)
-    {
-        next_line = narwhal_next_line(next_line) + 1;
+    for (size_t i = 0; i < lines; i++) {
+        next_line = nala_next_line(next_line) + 1;
     }
 
     return next_line;
@@ -1417,19 +1409,19 @@ const char *narwhal_next_lines(const char *string, size_t lines)
 #include <sys/types.h>
 
 // #include "../utils.h"
-#ifndef NARWHAL_UTILS_H
-#define NARWHAL_UTILS_H
+#ifndef NALA_UTILS_H
+#define NALA_UTILS_H
 
 #include <stdbool.h>
 #include <stdio.h>
 
-size_t narwhal_util_read_stream(FILE *stream, char **buffer);
-bool narwhal_is_short_string(const char *string);
-int narwhal_min_int(int a, int b);
-size_t narwhal_min_size_t(size_t a, size_t b);
-size_t narwhal_count_chars(const char *string, char chr);
-const char *narwhal_next_line(const char *string);
-const char *narwhal_next_lines(const char *string, size_t lines);
+size_t nala_util_read_stream(FILE *stream, char **buffer);
+bool nala_is_short_string(const char *string);
+int nala_min_int(int a, int b);
+size_t nala_min_size_t(size_t a, size_t b);
+size_t nala_count_chars(const char *string, char chr);
+const char *nala_next_line(const char *string);
+const char *nala_next_lines(const char *string, size_t lines);
 
 #endif
 
@@ -1438,16 +1430,16 @@ const char *narwhal_next_lines(const char *string, size_t lines);
  * Diff matrix initialization
  */
 
-static void initialize_diff_matrix(NarwhalDiffMatrix *diff_matrix, size_t rows, size_t columns)
+static void initialize_diff_matrix(NalaDiffMatrix *diff_matrix, size_t rows, size_t columns)
 {
     diff_matrix->rows = rows;
     diff_matrix->columns = columns;
     diff_matrix->content = malloc(rows * columns * sizeof(int));
 }
 
-NarwhalDiffMatrix *narwhal_new_diff_matrix(size_t rows, size_t columns)
+NalaDiffMatrix *nala_new_diff_matrix(size_t rows, size_t columns)
 {
-    NarwhalDiffMatrix *diff_matrix = malloc(sizeof(NarwhalDiffMatrix));
+    NalaDiffMatrix *diff_matrix = malloc(sizeof(NalaDiffMatrix));
     initialize_diff_matrix(diff_matrix, rows, columns);
 
     return diff_matrix;
@@ -1457,43 +1449,43 @@ NarwhalDiffMatrix *narwhal_new_diff_matrix(size_t rows, size_t columns)
  * Diff matrix operations
  */
 
-NarwhalDiffMatrix *narwhal_new_diff_matrix_from_lengths(size_t original_length,
+NalaDiffMatrix *nala_new_diff_matrix_from_lengths(size_t original_length,
                                                         size_t modified_length)
 {
-    NarwhalDiffMatrix *diff_matrix =
-        narwhal_new_diff_matrix(modified_length + 1, original_length + 1);
+    NalaDiffMatrix *diff_matrix =
+        nala_new_diff_matrix(modified_length + 1, original_length + 1);
 
     for (size_t i = 0; i < diff_matrix->rows; i++)
     {
-        narwhal_diff_matrix_set(diff_matrix, i, 0, (int)i);
+        nala_diff_matrix_set(diff_matrix, i, 0, (int)i);
     }
 
     for (size_t j = 0; j < diff_matrix->columns; j++)
     {
-        narwhal_diff_matrix_set(diff_matrix, 0, j, (int)j);
+        nala_diff_matrix_set(diff_matrix, 0, j, (int)j);
     }
 
     return diff_matrix;
 }
 
-static void fill_different(NarwhalDiffMatrix *diff_matrix, size_t i, size_t j)
+static void fill_different(NalaDiffMatrix *diff_matrix, size_t i, size_t j)
 {
-    narwhal_diff_matrix_set(
+    nala_diff_matrix_set(
         diff_matrix,
         i,
         j,
-        narwhal_min_int(narwhal_diff_matrix_get(diff_matrix, i - 1, j - 1),
-                        narwhal_min_int(narwhal_diff_matrix_get(diff_matrix, i - 1, j),
-                                        narwhal_diff_matrix_get(diff_matrix, i, j - 1))) +
+        nala_min_int(nala_diff_matrix_get(diff_matrix, i - 1, j - 1),
+                        nala_min_int(nala_diff_matrix_get(diff_matrix, i - 1, j),
+                                        nala_diff_matrix_get(diff_matrix, i, j - 1))) +
             1);
 }
 
-static void fill_equal(NarwhalDiffMatrix *diff_matrix, size_t i, size_t j)
+static void fill_equal(NalaDiffMatrix *diff_matrix, size_t i, size_t j)
 {
-    narwhal_diff_matrix_set(diff_matrix, i, j, narwhal_diff_matrix_get(diff_matrix, i - 1, j - 1));
+    nala_diff_matrix_set(diff_matrix, i, j, nala_diff_matrix_get(diff_matrix, i - 1, j - 1));
 }
 
-void narwhal_diff_matrix_fill_from_strings(NarwhalDiffMatrix *diff_matrix,
+void nala_diff_matrix_fill_from_strings(NalaDiffMatrix *diff_matrix,
                                            const char *original,
                                            const char *modified)
 {
@@ -1513,7 +1505,7 @@ void narwhal_diff_matrix_fill_from_strings(NarwhalDiffMatrix *diff_matrix,
     }
 }
 
-void narwhal_diff_matrix_fill_from_lines(NarwhalDiffMatrix *diff_matrix,
+void nala_diff_matrix_fill_from_lines(NalaDiffMatrix *diff_matrix,
                                          const char *original,
                                          const char *modified)
 {
@@ -1522,7 +1514,7 @@ void narwhal_diff_matrix_fill_from_lines(NarwhalDiffMatrix *diff_matrix,
 
     for (size_t i = 1; i < diff_matrix->rows; i++)
     {
-        modified_pos = narwhal_next_line(modified_line);
+        modified_pos = nala_next_line(modified_line);
         size_t modified_line_length = (size_t)(modified_pos - modified_line);
 
         const char *original_pos;
@@ -1530,7 +1522,7 @@ void narwhal_diff_matrix_fill_from_lines(NarwhalDiffMatrix *diff_matrix,
 
         for (size_t j = 1; j < diff_matrix->columns; j++)
         {
-            original_pos = narwhal_next_line(original_line);
+            original_pos = nala_next_line(original_line);
             size_t original_line_length = (size_t)(original_pos - original_line);
 
             if (original_line_length == modified_line_length &&
@@ -1550,17 +1542,17 @@ void narwhal_diff_matrix_fill_from_lines(NarwhalDiffMatrix *diff_matrix,
     }
 }
 
-NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
+NalaDiff nala_diff_matrix_get_diff(const NalaDiffMatrix *diff_matrix)
 {
     if (diff_matrix->rows == 1 && diff_matrix->columns == 1)
     {
-        NarwhalDiff diff = { .size = 0, .chunks = NULL };
+        NalaDiff diff = { .size = 0, .chunks = NULL };
         return diff;
     }
 
     size_t capacity = 32;
     size_t size = 0;
-    NarwhalDiffChunk *backtrack = malloc(capacity * sizeof(NarwhalDiffChunk));
+    NalaDiffChunk *backtrack = malloc(capacity * sizeof(NalaDiffChunk));
 
     size_t i = diff_matrix->rows - 1;
     size_t j = diff_matrix->columns - 1;
@@ -1570,17 +1562,17 @@ NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
         if (size == capacity)
         {
             capacity *= 2;
-            backtrack = realloc(backtrack, capacity * sizeof(NarwhalDiffChunk));
+            backtrack = realloc(backtrack, capacity * sizeof(NalaDiffChunk));
         }
 
-        NarwhalDiffChunk *current_chunk = &backtrack[size];
+        NalaDiffChunk *current_chunk = &backtrack[size];
         size++;
 
-        int current = narwhal_diff_matrix_get(diff_matrix, i, j);
+        int current = nala_diff_matrix_get(diff_matrix, i, j);
 
-        if (i > 0 && j > 0 && current == narwhal_diff_matrix_get(diff_matrix, i - 1, j - 1) + 1)
+        if (i > 0 && j > 0 && current == nala_diff_matrix_get(diff_matrix, i - 1, j - 1) + 1)
         {
-            current_chunk->type = NARWHAL_DIFF_CHUNK_TYPE_REPLACED;
+            current_chunk->type = NALA_DIFF_CHUNK_TYPE_REPLACED;
             current_chunk->original_start = j - 1;
             current_chunk->original_end = j;
             current_chunk->modified_start = i - 1;
@@ -1588,27 +1580,27 @@ NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
             i--;
             j--;
         }
-        else if (j > 0 && current == narwhal_diff_matrix_get(diff_matrix, i, j - 1) + 1)
+        else if (j > 0 && current == nala_diff_matrix_get(diff_matrix, i, j - 1) + 1)
         {
-            current_chunk->type = NARWHAL_DIFF_CHUNK_TYPE_DELETED;
+            current_chunk->type = NALA_DIFF_CHUNK_TYPE_DELETED;
             current_chunk->original_start = j - 1;
             current_chunk->original_end = j;
             current_chunk->modified_start = i;
             current_chunk->modified_end = i;
             j--;
         }
-        else if (i > 0 && current == narwhal_diff_matrix_get(diff_matrix, i - 1, j) + 1)
+        else if (i > 0 && current == nala_diff_matrix_get(diff_matrix, i - 1, j) + 1)
         {
-            current_chunk->type = NARWHAL_DIFF_CHUNK_TYPE_ADDED;
+            current_chunk->type = NALA_DIFF_CHUNK_TYPE_ADDED;
             current_chunk->original_start = j;
             current_chunk->original_end = j;
             current_chunk->modified_start = i - 1;
             current_chunk->modified_end = i;
             i--;
         }
-        else if (i > 0 && j > 0 && current == narwhal_diff_matrix_get(diff_matrix, i - 1, j - 1))
+        else if (i > 0 && j > 0 && current == nala_diff_matrix_get(diff_matrix, i - 1, j - 1))
         {
-            current_chunk->type = NARWHAL_DIFF_CHUNK_TYPE_MATCHED;
+            current_chunk->type = NALA_DIFF_CHUNK_TYPE_MATCHED;
             current_chunk->original_start = j - 1;
             current_chunk->original_end = j;
             current_chunk->modified_start = i - 1;
@@ -1618,7 +1610,7 @@ NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
         }
     }
 
-    NarwhalDiff diff = { size, malloc(size * sizeof(NarwhalDiffChunk)) };
+    NalaDiff diff = { size, malloc(size * sizeof(NalaDiffChunk)) };
 
     ssize_t backtrack_index = (ssize_t)size - 1;
     size_t chunk_index = 0;
@@ -1627,20 +1619,20 @@ NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
 
     for (backtrack_index--; backtrack_index >= 0; backtrack_index--)
     {
-        NarwhalDiffChunk *chunk = &backtrack[backtrack_index];
-        NarwhalDiffChunk *previous_chunk = &diff.chunks[chunk_index];
+        NalaDiffChunk *chunk = &backtrack[backtrack_index];
+        NalaDiffChunk *previous_chunk = &diff.chunks[chunk_index];
 
         if (chunk->type == previous_chunk->type)
         {
             previous_chunk->original_end = chunk->original_end;
             previous_chunk->modified_end = chunk->modified_end;
         }
-        else if ((chunk->type == NARWHAL_DIFF_CHUNK_TYPE_REPLACED &&
-                  previous_chunk->type != NARWHAL_DIFF_CHUNK_TYPE_MATCHED) ||
-                 (chunk->type != NARWHAL_DIFF_CHUNK_TYPE_MATCHED &&
-                  previous_chunk->type == NARWHAL_DIFF_CHUNK_TYPE_REPLACED))
+        else if ((chunk->type == NALA_DIFF_CHUNK_TYPE_REPLACED &&
+                  previous_chunk->type != NALA_DIFF_CHUNK_TYPE_MATCHED) ||
+                 (chunk->type != NALA_DIFF_CHUNK_TYPE_MATCHED &&
+                  previous_chunk->type == NALA_DIFF_CHUNK_TYPE_REPLACED))
         {
-            previous_chunk->type = NARWHAL_DIFF_CHUNK_TYPE_REPLACED;
+            previous_chunk->type = NALA_DIFF_CHUNK_TYPE_REPLACED;
             previous_chunk->original_end = chunk->original_end;
             previous_chunk->modified_end = chunk->modified_end;
         }
@@ -1654,68 +1646,68 @@ NarwhalDiff narwhal_diff_matrix_get_diff(const NarwhalDiffMatrix *diff_matrix)
     free(backtrack);
 
     diff.size = chunk_index + 1;
-    diff.chunks = realloc(diff.chunks, diff.size * sizeof(NarwhalDiffChunk));
+    diff.chunks = realloc(diff.chunks, diff.size * sizeof(NalaDiffChunk));
 
     return diff;
 }
 
-size_t narwhal_diff_matrix_index(const NarwhalDiffMatrix *diff_matrix, size_t row, size_t column)
+size_t nala_diff_matrix_index(const NalaDiffMatrix *diff_matrix, size_t row, size_t column)
 {
     return row * diff_matrix->columns + column;
 }
 
-int narwhal_diff_matrix_get(const NarwhalDiffMatrix *diff_matrix, size_t row, size_t column)
+int nala_diff_matrix_get(const NalaDiffMatrix *diff_matrix, size_t row, size_t column)
 {
-    return diff_matrix->content[narwhal_diff_matrix_index(diff_matrix, row, column)];
+    return diff_matrix->content[nala_diff_matrix_index(diff_matrix, row, column)];
 }
 
-void narwhal_diff_matrix_set(const NarwhalDiffMatrix *diff_matrix,
+void nala_diff_matrix_set(const NalaDiffMatrix *diff_matrix,
                              size_t row,
                              size_t column,
                              int value)
 {
-    diff_matrix->content[narwhal_diff_matrix_index(diff_matrix, row, column)] = value;
+    diff_matrix->content[nala_diff_matrix_index(diff_matrix, row, column)] = value;
 }
 
 /*
  * Higher-level wrappers
  */
 
-NarwhalDiff narwhal_diff_strings_lengths(const char *original,
+NalaDiff nala_diff_strings_lengths(const char *original,
                                          size_t original_length,
                                          const char *modified,
                                          size_t modified_length)
 {
-    NarwhalDiffMatrix *diff_matrix =
-        narwhal_new_diff_matrix_from_lengths(original_length, modified_length);
+    NalaDiffMatrix *diff_matrix =
+        nala_new_diff_matrix_from_lengths(original_length, modified_length);
 
-    narwhal_diff_matrix_fill_from_strings(diff_matrix, original, modified);
+    nala_diff_matrix_fill_from_strings(diff_matrix, original, modified);
 
-    NarwhalDiff diff = narwhal_diff_matrix_get_diff(diff_matrix);
+    NalaDiff diff = nala_diff_matrix_get_diff(diff_matrix);
 
-    narwhal_free_diff_matrix(diff_matrix);
+    nala_free_diff_matrix(diff_matrix);
 
     return diff;
 }
 
-NarwhalDiff narwhal_diff_strings(const char *original, const char *modified)
+NalaDiff nala_diff_strings(const char *original, const char *modified)
 {
-    return narwhal_diff_strings_lengths(original, strlen(original), modified, strlen(modified));
+    return nala_diff_strings_lengths(original, strlen(original), modified, strlen(modified));
 }
 
-NarwhalDiff narwhal_diff_lines(const char *original, const char *modified)
+NalaDiff nala_diff_lines(const char *original, const char *modified)
 {
-    size_t original_length = narwhal_count_chars(original, '\n') + 1;
-    size_t modified_length = narwhal_count_chars(modified, '\n') + 1;
+    size_t original_length = nala_count_chars(original, '\n') + 1;
+    size_t modified_length = nala_count_chars(modified, '\n') + 1;
 
-    NarwhalDiffMatrix *diff_matrix =
-        narwhal_new_diff_matrix_from_lengths(original_length, modified_length);
+    NalaDiffMatrix *diff_matrix =
+        nala_new_diff_matrix_from_lengths(original_length, modified_length);
 
-    narwhal_diff_matrix_fill_from_lines(diff_matrix, original, modified);
+    nala_diff_matrix_fill_from_lines(diff_matrix, original, modified);
 
-    NarwhalDiff diff = narwhal_diff_matrix_get_diff(diff_matrix);
+    NalaDiff diff = nala_diff_matrix_get_diff(diff_matrix);
 
-    narwhal_free_diff_matrix(diff_matrix);
+    nala_free_diff_matrix(diff_matrix);
 
     return diff;
 }
@@ -1724,7 +1716,7 @@ NarwhalDiff narwhal_diff_lines(const char *original, const char *modified)
  * Cleanup
  */
 
-void narwhal_free_diff_matrix(NarwhalDiffMatrix *diff_matrix)
+void nala_free_diff_matrix(NalaDiffMatrix *diff_matrix)
 {
     free(diff_matrix->content);
     free(diff_matrix);
@@ -1736,7 +1728,7 @@ void narwhal_free_diff_matrix(NarwhalDiffMatrix *diff_matrix)
 #include <stdio.h>
 #include <stdlib.h>
 
-char *narwhal_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row)
+char *nala_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row)
 {
     size_t dump_size;
     char *dump;
@@ -1744,41 +1736,31 @@ char *narwhal_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row)
 
     size_t offset = 0;
 
-    while (offset < size)
-    {
+    while (offset < size) {
         fprintf(stream, "%06lX  ", offset);
 
-        for (size_t i = 0; i < bytes_per_row; i++)
-        {
-            if (offset + i < size)
-            {
+        for (size_t i = 0; i < bytes_per_row; i++) {
+            if (offset + i < size)             {
                 fprintf(stream, "%02X ", buffer[offset + i]);
-            }
-            else
-            {
+            } else {
                 fprintf(stream, "-- ");
             }
         }
 
         fprintf(stream, " ");
 
-        for (size_t i = 0; i < bytes_per_row; i++)
-        {
-            if (offset + i < size)
-            {
+        for (size_t i = 0; i < bytes_per_row; i++) {
+            if (offset + i < size) {
                 uint8_t byte = buffer[offset + i];
                 fprintf(stream, "%c", isprint(byte) ? byte : '.');
-            }
-            else
-            {
+            } else {
                 fprintf(stream, " ");
             }
         }
 
         offset += bytes_per_row;
 
-        if (offset < size)
-        {
+        if (offset < size) {
             fprintf(stream, "\n");
         }
     }
@@ -1788,44 +1770,36 @@ char *narwhal_hexdump(const uint8_t *buffer, size_t size, size_t bytes_per_row)
     return dump;
 }
 
-size_t narwhal_optimal_bytes_per_row(size_t element_size, size_t target, size_t range)
+size_t nala_optimal_bytes_per_row(size_t element_size, size_t target, size_t range)
 {
     size_t min = target - range;
     size_t max = target + range;
 
-    if (element_size < min)
-    {
+    if (element_size < min) {
         return (size_t)((double)target / (double)element_size + 0.5) * element_size;
     }
 
-    if (element_size > max)
-    {
-        if (element_size % target == 0)
-        {
+    if (element_size > max) {
+        if (element_size % target == 0) {
             return target;
         }
 
         size_t div_min = target;
         size_t div_max = target;
 
-        while (div_min > min || div_max < max)
-        {
-            if (div_min > min)
-            {
+        while (div_min > min || div_max < max) {
+            if (div_min > min) {
                 div_min--;
 
-                if (element_size % div_min == 0)
-                {
+                if (element_size % div_min == 0) {
                     return div_min;
                 }
             }
 
-            if (div_max < max)
-            {
+            if (div_max < max) {
                 div_max++;
 
-                if (element_size % div_max == 0)
-                {
+                if (element_size % div_max == 0) {
                     return div_max;
                 }
             }

@@ -76,8 +76,11 @@ enum ks_log_level
 
 struct ks_log_source
 {
+    char *input_buf;
+    size_t input_buf_sz;
+    uint32_t input_buf_off;
     enum ks_log_level lvl;
-    struct ks_eventloop_io *io;
+    struct ks_log_object *log_object;
     struct ks_log_source *next;
 };
 
@@ -90,14 +93,17 @@ struct ks_log_sink
 };
 
 
-struct ks_log_ctx * ks_log_init(struct ks_eventloop_ctx *ctx,
-                                size_t bfr_sz);
+int ks_log_init(struct ks_eventloop_ctx *el,
+                struct ks_log_ctx **ctx,
+                size_t bfr_sz);
 
-struct ks_log_object * ks_log_create(struct ks_log_ctx *ctx,
-                                     const char *name);
+int ks_log_create(struct ks_log_ctx *ctx,
+                  struct ks_log_object **obj,
+                  const char *name);
 
 int ks_log_add_source(struct ks_log_object *obj,
                       enum ks_log_level lvl,
+                      size_t buf_sz,
                       int fd);
 
 int ks_log_add_sink(struct ks_log_ctx *log, int fd);

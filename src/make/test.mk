@@ -1,8 +1,8 @@
 TEST_TARGETS = 
 TESTS =
 
-TEST_BASE_SRC = 3pp/narwhal/narwhal.c
-CFLAGS += -I 3pp/narwhal -I build-test/
+TEST_BASE_SRC = 3pp/nala/nala.c
+CFLAGS += -I 3pp/nala -I build-test/
 
 -include $(wildcard test/*/makefile.mk)
 
@@ -27,12 +27,12 @@ build-test/test/$(1)/__mocks__.c: $($(2)_SRCS)
 	$$(info MOCK $(1))
 	@mkdir -p build-test/test/$(1)
 	@$(CC) $$(CFLAGS) -E test/$(1)/*.c | \
-		narmock -g -d build-test/test/$(1)/
+		nala -g -d build-test/test/$(1)/
 
 build-test/test/test-$(2): $$($(2)_OBJS)
 	$$(info LINK $(1))
 	@$(CC) $$(CFLAGS) $$($(2)_OBJS) $$($(2)_LDFLAGS) \
-		$$(shell narmock -f -d test/$(1)/) \
+		$$(shell nala -f -d test/$(1)/) \
 		-o build-test/test/test-$(2)
 
 TEST_TARGETS += $$(BUILD_DIR)/test/$(1)/__mocks__.c
