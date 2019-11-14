@@ -15,7 +15,7 @@ TEST(log_basic)
 
     rc = ks_eventloop_init(&ctx);
     ASSERT_EQ(rc, KS_OK);
-    
+
     struct ks_log_ctx *log;
     rc = ks_log_init(&ctx, &log, 1024);
     ASSERT_EQ(rc, KS_OK);
@@ -41,15 +41,8 @@ TEST(log_basic)
         ASSERT_EQ(rc, KS_OK);
     }
 
-    ASSERT_EQ(log->dbg_out, 1);
-    ASSERT_EQ(log->dbg_in, 1);
-    ASSERT_EQ(log->head_index, 27);
-    ASSERT_EQ(log->sinks->tail_index, 27);
     ASSERT_EQ(message, "0.000000 test INFO   Hello");
 
     rc = ks_eventloop_loop_once(&ctx,5);
-    ASSERT_EQ(rc, KS_ERR);
-    ASSERT_EQ(log->dbg_out, 1);
-    ASSERT_EQ(log->dbg_in, 1);
-*/
+    ASSERT_EQ(rc, KS_ERR);*/
 }

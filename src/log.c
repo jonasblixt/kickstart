@@ -20,29 +20,12 @@ static void __ks_log_in_cb(void *data, struct ks_eventloop_io *io)
     struct ks_log_ctx *ctx = obj->log_ctx;
 
     size_t read_data = read(io->fd,
-                            &src->input_buf[src->input_buf_off],
+                            src->input_buf,
                             src->input_buf_sz);
-
-find_next_line:
-    for (int32_t i = 0; i < read_data; i++)
-    {
-        char c = src->input_buf[i+src->input_buf_off];
-        
-        if (c == '\r')
-            src->input_buf[i+src->input_buf_off] = ' ';
-
-        if (c == '\n')
-        {
-            ks_ringbuffer_write(ctx->rb, &i, 4);
-            ks_ringbuffer_write(ctx->rb,
-                                &src->input_buf[i+src->input_buf_off],
-                                i);
-            src->input_buf_off += i;
-            goto find_next_line;
-        }
-    }
-
-    src->input_buf_off = 0;
+ 
+    int32_t sz = (int32_t) read_data;
+    ks_ringbuffer_write(ctx->rb, &sz, 4);
+    ks_ringbuffer_write(ctx->rb, src->input_buf, read_data);
 
     /* Trigger all sinks */
     for (struct ks_log_sink *sink = ctx->sinks; sink; sink = sink->next)
@@ -57,12 +40,15 @@ static void __ks_log_out_cb(void *data, struct ks_eventloop_io *io)
     struct ks_log_ctx *ctx = sink->log_ctx;
 
     int32_t log_entry_sz = 0;
-
     ks_ringbuffer_read(ctx->rb, sink->t, &log_entry_sz, 4);
 
     if (log_entry_sz)
     {
-        
+        ks_ringbuffer_read(ctx->rb, sink->t, sink->buf, log_entry_sz);
+        write(io->fd, sink->buf, log_entry_sz);
+
+        /* Kick descriptor until buffer is empty */
+        ks_eventloop_io_oneshot(ctx->el, sink->io);
     }
 }
 
@@ -189,7 +175,7 @@ int ks_log_add_sink(struct ks_log_ctx *log, int fd)
     io->fd = fd;
     io->data = sink;
     io->cb = __ks_log_out_cb;
-    io->flags = 0;
+    io->flags = EPOLLOUT | EPOLLONESHOT;
 
     if (log->sinks == NULL)
     {

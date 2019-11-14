@@ -8,32 +8,72 @@
 #include <sys/epoll.h>
 
 /**
+ *  - KICKSTART LOG SYSTEM -
+ * 
  *
- * Log core
+ *  FORMATTERS                 SOURCES                LOG CORE
+ *  ----------                 -------                -------- 
  *
- *                          +- Log object 0 -+     +- Log context -+
- *  Source 0   --- (Info) --| Name           |     | Ram buffer    |
- *  Source 1   --- (Warn) --|                |-----| Time stamping |
- *  Source n-1 --- (Err) ---|                |     | Persistent    |
- *                          +----------------+     |   storage     |
- *                                                 | Compression   |
- *                                                 |               |
- *                          +- Log object 1 -+     |               |
- *  Source 0   --- (Info) --| Name           |     |               |
- *  Source 1   --- (Warn) --|                |-----|               |
- *  Source n-1 --- (Err) ---|                |     |               |
- *                          +----------------+     +---------------+
- *  Eventloop handle --------------------------------^   |
- *                                                       |
- *  Sink 0   <---+---------------------------------------+
- *  Sink 1   <---+
- *  Sink n-1 <---+
+ *  +- Syslog ---------+       +- Source 0 -----+     +- Log context -+
+ *  | UDP Listner      |       | Name, fd       |     | Ram buffer    |
+ *  | DS /dev/log      |-------| Input buffer   |-->--| Time stamping |
+ *  | Syslog formatter |       | Formatter CB   |     | Persistent    |
+ *  +------------------+       +----------------+     |   storage     |
+ *                                                    | Compression   |
+ *                                                    |               |
+ *  +- Kernel log -----+       +- Source 1 -----+     |               |
+ *  | Follow /dev/kmsg |       |                |     |               |
+ *  | Kernel formatter |-------|     ....       |-->--|               |
+ *  |                  |       |                |     |               |
+ *  +------------------+       +----------------+     |               |
+ *                                                    |               |
+ *                                                    |               |
+ *  Eventloop handle ---------------------------------|               |
+ *  API ----------------------<>----------------------|               |
+ *                                                    |               |
+ *                                                    |               |
+ *                                                    |               |
+ *  +-- Sink 0 -------+                               |               |
+ *  | fd              |                               |               |
+ *  | Output buffer   |----------<--------------------|               |
+ *  |                 |                               |               |
+ *  +-----------------+                               |               |
+ *         .                                          |               |
+ *         .                                          |               |
+ *         .                                          |               |
+ *         .                                          |               |
+ *       sink n-1                                     |               |
+ *                                                    |               |
+ *                                                    |               |
+ *                                                    +---------------+
+ *
+ *
+ * 
+ *
+ *  Sink/Source details:
+ * 
+ *  Each source has the following properties:
+ *      - Collect incoming data on a file descriptor
+ *      - Write structured data into the main ring buffer
+ *      - If source data is not already formatted correctly an optional 
+ *          formatter callback must be implemented
+ *      - Trigger sinks whenever a new log message has been posted on the
+ *          ring buffer
+ *
+ *  Sinks have the following properties:
+ *      - Maintains an output buffer that should hold one output message
+ *      - File descriptor
+ *
+ *
+ *  Notes: 
  *
  *  Possible sources:
  *      - Kernel log, /dev/kmsg
  *      - Stdout/Stderr from sub processes
  *      - Remote log targets, e.g. VM guest, co-processor
  *      - Internal sources
+ *      - Syslog UDP listner
+ *      - Syslog domain-socket listner
  *
  *  Possible sinks:
  *      - Stdout
@@ -41,6 +81,12 @@
  *
  *  Ideas:
  *      - Translate log object name to crc32 tag
+ *      - Rate limiting
+ *      - Coalesce same messages in a row
+ *      - Log epoch reference from boot
+ *          o 
+ *      - Timestamp is uint64
+ *      
  *
  *
  */
@@ -86,6 +132,7 @@ struct ks_log_source
 
 struct ks_log_sink
 {
+    char buf[1024];
     struct ks_ringbuffer_tail *t;
     struct ks_eventloop_io *io;
     struct ks_log_ctx *log_ctx;
