@@ -42,7 +42,7 @@ int ks_ringbuffer_new_tail(struct ks_ringbuffer *rb,
 {
     if (rb == NULL)
         return KS_ERR;
-    
+
     if (rb->tails == NULL)
     {
         rb->tails = malloc(sizeof(struct ks_ringbuffer_tail));
@@ -51,7 +51,7 @@ int ks_ringbuffer_new_tail(struct ks_ringbuffer *rb,
         memset(rb->tails, 0, sizeof(struct ks_ringbuffer_tail));
         (*t) = rb->tails;
         return KS_OK;
-    } 
+    }
 
     struct ks_ringbuffer_tail *last = rb->tails;
 
