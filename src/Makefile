@@ -11,7 +11,6 @@ KS_SYSROOT ?= /sdk
 
 ifndef BOARD
 BOARD = test
-CFLAGS += -fprofile-arcs -ftest-coverage
 endif
 
 BUILD_DIR = build-$(BOARD)
@@ -31,7 +30,14 @@ LIBS += libnl-nf-3.0
 
 ROOTDEVICE ?= mmcblk0
 
-CFLAGS  += -Wall -Os
+
+ifeq ($(BOARD),test)
+CFLAGS  += -fprofile-arcs -ftest-coverage -g -O0
+else
+CFLAGS  += -O2
+endif
+
+CFLAGS  += -Wall
 CFLAGS  += -DROOTDEVICE=\"$(ROOTDEVICE)\"
 CFLAGS  += -I $(KS_SYSROOT)/include
 CFLAGS  += -I include
