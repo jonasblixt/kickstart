@@ -21,4 +21,10 @@ enum
     KS_HASH_SHA512 = 3,
 };
 
+#define ARRAY_SIZE(arr) \
+    (sizeof(arr) / sizeof((arr)[0]) \
+     + sizeof(typeof(int[1 - 2 * \
+           !!__builtin_types_compatible_p(typeof(arr), \
+                 typeof(&arr[0]))])) * 0)
+
 #endif

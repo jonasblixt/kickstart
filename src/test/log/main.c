@@ -1,48 +1,93 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 #include <nala.h>
 #include <unistd.h>
 #include <kickstart/log.h>
 #include <kickstart/eventloop.h>
 #include <kickstart/ringbuffer.h>
 
+
+static int test_input_formatter (struct ks_log_source *src,
+                                   uint16_t sz,
+                                   struct ks_log_entry_header *hdr)
+{
+
+    hdr->magic = KS_LOG_HEADER_MAGIC;
+    hdr->sz = sz;
+    hdr->source_id = 1;
+    hdr->ts = 1;
+    hdr->lvl = KS_LOG_LEVEL_INFO;
+
+    return KS_OK;
+}
+
+
+static int test_output_formatter (struct ks_log_sink *sink,
+                                   uint16_t sz,
+                                   uint16_t *new_sz,
+                                   struct ks_log_entry_header *hdr)
+{
+    memcpy(sink->tmp, sink->buf, sz);
+
+    snprintf(sink->buf, KS_LOG_OUTPUT_BUF_SZ,
+             "%li %s %s: %s\n",
+             hdr->ts,
+             ks_log_level_to_string(hdr->lvl),
+             "test",
+             sink->tmp);
+
+    (*new_sz) = strlen(sink->buf);
+
+    return KS_OK;
+}
+
 TEST(log_basic)
 {
     int rc;
     int fds[2];
     struct ks_eventloop_ctx ctx;
+    struct ks_log log;
     const char *msg = "Hello";
 
     pipe(fds);
+    
 
     rc = ks_eventloop_init(&ctx);
     ASSERT_EQ(rc, KS_OK);
 
-    struct ks_log_ctx *log;
-    rc = ks_log_init(&ctx, &log, 1024);
+    rc = ks_log_init(&log, &ctx, 1024);
     ASSERT_EQ(rc, KS_OK);
 
-    struct ks_log_object *obj;
-    rc = ks_log_create(log, &obj, "test");
+    struct ks_log_source src0;
+    rc = ks_log_add_source(&log, &src0, fds[0]);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_add_source(obj, KS_LOG_LEVEL_INFO, 256, fds[0]);
+    rc = ks_log_set_input_formatter(&src0, test_input_formatter);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_add_sink(log, STDOUT_FILENO);
+    struct ks_log_sink sink0;
+    rc = ks_log_add_sink(&log, &sink0, STDOUT_FILENO);
     ASSERT_EQ(rc, KS_OK);
 
+    rc = ks_log_set_output_formatter(&sink0, test_output_formatter);
     write(fds[1], msg, 6);
 
-    rc = ks_eventloop_loop_once(&ctx,500);
+
+    rc = ks_eventloop_loop_once(&ctx, 500);
     ASSERT_EQ(rc, KS_OK);
-/*
+
+    rc = ks_eventloop_loop_once(&ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
     CAPTURE_OUTPUT(message, msgs_stderr)
     {
-        rc = ks_eventloop_loop_once(&ctx,500);
+        rc = ks_eventloop_loop_once(&ctx, 500);
         ASSERT_EQ(rc, KS_OK);
     }
 
-    ASSERT_EQ(message, "0.000000 test INFO   Hello");
+    ASSERT_EQ(message, "1 INFO test: Hello\n");
 
-    rc = ks_eventloop_loop_once(&ctx,5);
-    ASSERT_EQ(rc, KS_ERR);*/
+    rc = ks_eventloop_loop_once(&ctx, 5);
+    ASSERT_EQ(rc, KS_ERR);
+
 }

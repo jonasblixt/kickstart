@@ -38,6 +38,7 @@ CFLAGS  += -O2
 endif
 
 CFLAGS  += -Wall
+CFLAGS  += -no-pie
 CFLAGS  += -DROOTDEVICE=\"$(ROOTDEVICE)\"
 CFLAGS  += -I $(KS_SYSROOT)/include
 CFLAGS  += -I include
