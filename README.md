@@ -1,8 +1,8 @@
+![KS Logo](doc/ks_logo.png)
+
 [![codecov](https://codecov.io/gh/jonasblixt/kickstart/branch/master/graph/badge.svg)](https://codecov.io/gh/jonasblixt/kickstart)
 [![Build Status](https://travis-ci.org/jonasblixt/kickstart.svg?branch=master)](https://travis-ci.org/jonasblixt/kickstart)
 [![Donate](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4XMK2G3TPN3BQ)
-
-![KS Logo](doc/ks_logo.png)
 
 Kickstart is a compact init system for embedded linux
 
