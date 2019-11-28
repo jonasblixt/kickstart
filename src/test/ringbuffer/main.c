@@ -248,7 +248,6 @@ TEST(rb_test_read_too_much)
 uint64_t advance_tail(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
                       uint64_t new_index)
 {
-    int rc;
     uint32_t *payload_sz = NULL; 
     uint64_t current_index = t->tail_index;
 
@@ -293,12 +292,12 @@ TEST(rb_write_objs)
     const char *payload3 = "He3";
 
     /* Write three objects */
-    rc = ks_ringbuffer_write(rb, &payload_length, 4);
+    rc = ks_ringbuffer_write(rb, (const char *) &payload_length, 4);
     ASSERT_EQ(rc, KS_OK); 
     rc = ks_ringbuffer_write(rb, payload, 3);
     ASSERT_EQ(rc, KS_OK); 
 
-    rc = ks_ringbuffer_write(rb, &payload_length, 4);
+    rc = ks_ringbuffer_write(rb, (const char *) &payload_length, 4);
     ASSERT_EQ(rc, KS_OK); 
     rc = ks_ringbuffer_write(rb, payload2, 3);
     ASSERT_EQ(rc, KS_OK); 
@@ -307,7 +306,7 @@ TEST(rb_write_objs)
     ASSERT_EQ(t->tail_index, 0);
     ASSERT_EQ(t->truncated_bytes, 0);
 
-    rc = ks_ringbuffer_write(rb, &payload_length, 4);
+    rc = ks_ringbuffer_write(rb, (const char *) &payload_length, 4);
     ASSERT_EQ(rc, KS_OK); 
     rc = ks_ringbuffer_write(rb, payload3, 3);
     ASSERT_EQ(rc, KS_OK); 

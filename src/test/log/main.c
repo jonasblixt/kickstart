@@ -43,14 +43,24 @@ static int test_output_formatter(struct ks_log_sink *sink,
                                  uint16_t *new_sz,
                                  struct ks_log_entry_header *hdr)
 {
+    int len;
     memcpy(sink->tmp, sink->buf, sz);
 
-    snprintf(sink->buf, KS_LOG_OUTPUT_BUF_SZ,
-             "%li %s %s: %s\n",
+    len = snprintf(sink->buf, KS_LOG_OUTPUT_BUF_SZ,
+             "%li %s %s: ",
              hdr->ts.tv_sec,
              ks_log_level_to_string(hdr->lvl),
-             ks_log_source_id_to_string(sink->log, hdr->source_id),
-             sink->tmp);
+             ks_log_source_id_to_string(sink->log, hdr->source_id));
+    
+    if (len && (len + sz < KS_LOG_OUTPUT_BUF_SZ))
+    {
+        memcpy(sink->buf + len, sink->tmp, sz);
+        sink->buf[len+sz] = 0;
+    }
+    else
+    {
+        return KS_ERR;
+    }
 
     (*new_sz) = strlen(sink->buf);
 
@@ -62,7 +72,7 @@ TEST(log_basic)
     int rc;
     int fds[2];
     struct ks_eventloop_ctx ctx;
-    struct ks_log log;
+    struct ks_log *log;
     const char *msg = "Hello";
 
     pipe(fds);
@@ -75,7 +85,7 @@ TEST(log_basic)
     ASSERT_EQ(rc, KS_OK);
 
     struct ks_log_source src0;
-    rc = ks_log_add_source(&log, &src0, fds[0]);
+    rc = ks_log_add_source(log, &src0, fds[0]);
     ASSERT_EQ(rc, KS_OK);
 
     rc = ks_log_set_input_formatter(&src0, test_input_formatter);
@@ -85,7 +95,7 @@ TEST(log_basic)
     ASSERT_EQ(rc, KS_OK);
 
     struct ks_log_sink sink0;
-    rc = ks_log_add_sink(&log, &sink0, STDOUT_FILENO);
+    rc = ks_log_add_sink(log, &sink0, STDOUT_FILENO);
     ASSERT_EQ(rc, KS_OK);
 
     rc = ks_log_set_output_formatter(&sink0, test_output_formatter);
@@ -96,15 +106,14 @@ TEST(log_basic)
 
     rc = ks_eventloop_loop_once(&ctx, 500);
     ASSERT_EQ(rc, KS_OK);
+
     CAPTURE_OUTPUT(message, msgs_stderr)
     {
         rc = ks_eventloop_loop_once(&ctx, 500);
         ASSERT_EQ(rc, KS_OK);
     }
+    printf("out: '%s'\n", message);
 
-    ASSERT_EQ(message, "1 INFO test: Hello\n");
-
-    rc = ks_eventloop_loop_once(&ctx, 5);
-    ASSERT_EQ(rc, KS_ERR);
-
+    //ASSERT_SUBSTRING(message, "1 INFO test: Hello");
+    ASSERT_EQ(strcmp(message, "1 INFO test: Hello"), 0);
 }

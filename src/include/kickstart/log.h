@@ -109,6 +109,9 @@ typedef int (*ks_log_output_formatter_t) (struct ks_log_sink *sink,
                                           uint16_t *new_sz,
                                           struct ks_log_entry_header *hdr);
 
+typedef int (*ks_log_write_t) (int fd,
+                               const void *buf,
+                               size_t count);
 struct ks_log_string_list
 {
     uint32_t id;
@@ -142,6 +145,7 @@ struct ks_log_sink
     char buf[KS_LOG_OUTPUT_BUF_SZ];
     char tmp[KS_LOG_OUTPUT_BUF_SZ];
     ks_log_output_formatter_t output_formatter;
+    ks_log_write_t write_cb;
     struct ks_ringbuffer_tail *t;
     struct ks_eventloop_io *io;
     struct ks_log *log;
@@ -157,7 +161,7 @@ struct ks_log_entry_header
     enum ks_log_level lvl;
 } __attribute__ ((packed));
 
-int ks_log_init(struct ks_log *log, struct ks_eventloop_ctx *el, size_t bfr_sz);
+int ks_log_init(struct ks_log **log, struct ks_eventloop_ctx *el, size_t bfr_sz);
 int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd);
 int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd);
 

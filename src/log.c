@@ -108,14 +108,20 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
     }
     else
     {
-        written = write(io->fd, &hdr, sizeof(hdr));
+        if (sink->write_cb)
+            written = sink->write_cb(io->fd, &hdr, sizeof(hdr));
+        else
+            written = write(io->fd, &hdr, sizeof(hdr));
 
         /* TODO: Add error counters for write faliures */
         if (written != sizeof(hdr))
             return;
     }
 
-    written = write(io->fd, sink->buf, data_to_write);
+    if (sink->write_cb)
+        written = sink->write_cb(io->fd, sink->buf, data_to_write);
+    else
+        written = write(io->fd, sink->buf, data_to_write);
 
     if (written != data_to_write)
         return;
@@ -160,11 +166,18 @@ const char * ks_log_level_to_string(enum ks_log_level lvl)
     return ks_log_level_str[lvl];
 }
 
-int ks_log_init(struct ks_log *log, struct ks_eventloop_ctx *el, size_t bfr_sz)
+int ks_log_init(struct ks_log **log, struct ks_eventloop_ctx *el, size_t bfr_sz)
 {
-    log->el = el;
 
-    if (ks_ringbuffer_init(&log->rb, bfr_sz) != KS_OK)
+    (*log) = malloc(sizeof(struct ks_log));
+
+    if (!(*log))
+        return KS_ERR;
+
+    memset(*log, 0, sizeof(struct ks_log));
+    (*log)->el = el;
+
+    if (ks_ringbuffer_init(&(*log)->rb, bfr_sz) != KS_OK)
     {
         return KS_ERR;
     }
@@ -251,12 +264,16 @@ int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd)
         last->next = sink;
     }
 
+    sink->write_cb = NULL;
+
     return ks_eventloop_add(ctx, io);
 }
 
 int ks_log_set_source_name(struct ks_log_source *src, const char *name)
 {
     if (!src)
+        return KS_ERR;
+    if (!src->log)
         return KS_ERR;
     if (!name)
         return KS_ERR;
