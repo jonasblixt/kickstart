@@ -1,11 +1,12 @@
 #ifndef INCLUDE_KICKSTART_LOG_H_
 #define INCLUDE_KICKSTART_LOG_H_
 
-#include <kickstart/kickstart.h>
-#include <kickstart/eventloop.h>
+#include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <sys/epoll.h>
+#include <kickstart/kickstart.h>
+#include <kickstart/eventloop.h>
 
 /**
  *  - KICKSTART LOG SYSTEM -
@@ -61,31 +62,14 @@
  *      - Maintains an output buffer that should hold one output message
  *      - File descriptor
  *
- *  Notes:
- *
- *  Possible sources:
- *      - Kernel log, /dev/kmsg
- *      - Stdout/Stderr from sub processes
- *      - Remote log targets, e.g. VM guest, co-processor
- *      - Internal sources
- *      - Syslog UDP listner
- *      - Syslog domain-socket listner
- *
- *  Possible sinks:
- *      - Stdout
- *      - Socket server for remote debugging
- *
  *  Ideas/Todos:
- *      - Translate log object name to crc32 tag
  *      - Rate limiting
  *      - Coalesce same messages in a row
  *      - Log epoch reference from boot
  *      - API call to initialize epoch
- *          - 
- *      - Timestamp is uint64
- *      - Only use malloc when allocating the main ring buffer
- *          the rest can be statically allocated
  *      - Implement ks_malloc, ks_free to support mocking of malloc/free
+ *      - Get boot timestamp from kernel /dev/uptime?
+ *
  *
  */
 
@@ -125,12 +109,20 @@ typedef int (*ks_log_output_formatter_t) (struct ks_log_sink *sink,
                                           uint16_t *new_sz,
                                           struct ks_log_entry_header *hdr);
 
+struct ks_log_string_list
+{
+    uint32_t id;
+    char *string;
+    struct ks_log_string_list *next;
+};
+
 struct ks_log
 {
     struct ks_ringbuffer *rb;
     struct ks_eventloop_ctx *el;
     struct ks_log_sink *sinks;
     struct ks_log_source *sources;
+    struct ks_log_string_list *source_names;
 };
 
 struct ks_log_source
@@ -161,19 +153,35 @@ struct ks_log_entry_header
     uint32_t magic;
     uint16_t sz;
     uint32_t source_id;
-    uint64_t ts;
+    struct timespec ts;
     enum ks_log_level lvl;
 } __attribute__ ((packed));
 
 int ks_log_init(struct ks_log *log, struct ks_eventloop_ctx *el, size_t bfr_sz);
 int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd);
-int ks_log_set_input_formatter(struct ks_log_source *src,
-                               ks_log_input_formatter_t formatter);
 int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd);
 
+/**
+ * An input formatter is necessary if the input data does not already
+ *  adhere to the internal kickstart log format.
+ *
+ *  The role of the input formatter is to decode the input stream and
+ *   populate the kickstart header structure before it can be stored
+ *   onto the main ring buffer.
+ */
+int ks_log_set_input_formatter(struct ks_log_source *src,
+                               ks_log_input_formatter_t formatter);
+
+/**
+ * Output formatters can translate the internal format to arbitrary
+ *  output. For example plain text.
+ *
+ */
 int ks_log_set_output_formatter(struct ks_log_sink *sink,
                                ks_log_output_formatter_t formatter);
 
 const char * ks_log_level_to_string(enum ks_log_level lvl);
+int ks_log_set_source_name(struct ks_log_source *src, const char *name);
+char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id);
 
 #endif  // INCLUDE_KICKSTART_LOG_H_

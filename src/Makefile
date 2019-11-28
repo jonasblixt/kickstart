@@ -25,6 +25,7 @@ LIBS += libnl-3.0
 LIBS += json-c
 LIBS += libnl-route-3.0
 LIBS += libnl-nf-3.0
+LIBS += zlib
 
 # $(eval $(libs))
 

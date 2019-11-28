@@ -1,6 +1,8 @@
 #ifndef __KICKSTART_H__
 #define __KICKSTART_H__
 
+#include <stdint.h>
+
 #define KS_OK 0
 #define KS_ERR 1
 

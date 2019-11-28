@@ -190,6 +190,8 @@ int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd)
 
     src->log = log;
     src->io = io;
+    src->name = NULL;
+    src->source_id = 0;
 
     if (log->sources == NULL)
     {
@@ -252,3 +254,49 @@ int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd)
     return ks_eventloop_add(ctx, io);
 }
 
+int ks_log_set_source_name(struct ks_log_source *src, const char *name)
+{
+    if (!src)
+        return KS_ERR;
+    if (!name)
+        return KS_ERR;
+
+    src->name = strdup(name);
+    src->source_id = (uint32_t) crc32(0L, (const Bytef *)src->name,
+                                  strlen(src->name));
+    if (!src->log->source_names)
+    {
+        src->log->source_names = malloc(sizeof(struct ks_log_string_list));
+        memset(src->log->source_names, 0, sizeof(struct ks_log_string_list));
+    }
+
+    struct ks_log_string_list *l = src->log->source_names;
+
+    while (l)
+    {
+        if (!l->next)
+        {
+            l->next = malloc(sizeof(struct ks_log_string_list));
+            memset(l->next, 0, sizeof(struct ks_log_string_list));
+            l->next->id = src->source_id;
+            l->next->string = strdup(name);
+            break;
+        }
+
+        l = l->next;
+    }
+
+    return KS_OK;
+}
+
+
+char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id)
+{
+    for (struct ks_log_string_list *l = log->source_names; l; l = l->next)
+    {
+        if (source_id == l->id)
+            return l->string;
+    }
+
+    return "Invalid";
+}

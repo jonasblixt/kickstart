@@ -52,4 +52,6 @@ Mkfile.old
 dkms.conf
 src/build/*
 src/build-*/*
-__mocks__.*
+nala_mocks.*
+src/report.json
+
