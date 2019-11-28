@@ -4,7 +4,7 @@ python:
     - "3.7"
 before_install:
     - sudo apt install git gcc make
-    - pip install nala==0.5.0
+    - pip install nala==0.36.0
 script:
     - make -C src test
 jobs:
