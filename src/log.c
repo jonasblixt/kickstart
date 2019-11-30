@@ -268,8 +268,6 @@ int ks_log_add_sink(struct ks_log *log, struct ks_log_sink **new_sink, int fd)
     struct ks_eventloop_io *io;
     int rc;
 
-    if (!new_sink)
-        return KS_ERR;
     if (!log)
         return KS_ERR;
     if (!new_sink)

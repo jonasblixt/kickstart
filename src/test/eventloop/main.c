@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#ifndef __NALA
+#include <test/eventloop/nala_mocks.h>
+#endif
 
 static bool timer_cb_fired = false;
 
@@ -329,4 +332,113 @@ TEST(ev_nullargs)
 
     rc = ks_eventloop_loop_once((struct ks_eventloop_ctx *) &p, 0);
     ASSERT_EQ(rc, KS_ERR);
+
+    struct ks_eventloop_ctx *el = NULL;
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_ERR);
+}
+
+TEST(ev_epoll_init_fail)
+{
+    struct ks_eventloop_ctx *el;
+    int rc;
+
+    epoll_create_mock_once(256, -1);
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_ERR);
+
+    epoll_create_mock_disable();
+
+    ks_ll_init_mock_once(KS_ERR);
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_ERR);
+
+}
+
+TEST(ev_remove_epoll_fail)
+{
+    struct ks_eventloop_ctx *el;
+    struct ks_eventloop_io *io;
+    int rc;
+
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_alloc_io(el, &io);
+    ASSERT_EQ(rc, KS_OK);
+    
+    epoll_ctl_mock_once(el->ep_fd, EPOLL_CTL_DEL, io->fd, -1);
+    rc = ks_eventloop_remove(el, io);
+    ASSERT_EQ(rc, KS_ERR);
+    epoll_ctl_mock_disable();
+
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+TEST(ev_remove_data2item_fail)
+{
+    struct ks_eventloop_ctx *el;
+    struct ks_eventloop_io *io;
+    int rc;
+
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_alloc_io(el, &io);
+    ASSERT_EQ(rc, KS_OK);
+    
+    epoll_ctl_mock_once(el->ep_fd, EPOLL_CTL_DEL, io->fd, 0);
+    ks_ll_data2item_mock_once(KS_ERR);
+    rc = ks_eventloop_remove(el, io);
+    ASSERT_EQ(rc, KS_ERR);
+
+
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+
+TEST(ev_add_io_fail)
+{
+    struct ks_eventloop_ctx *el;
+    struct ks_eventloop_io *io;
+    int rc;
+
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_alloc_io(el, &io);
+    ASSERT_EQ(rc, KS_OK);
+    
+    io->fd = -1;
+
+    rc = ks_eventloop_add(el, io);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+TEST(ev_add_io_fail2)
+{
+    struct ks_eventloop_ctx *el;
+    struct ks_eventloop_io *io;
+    int rc;
+
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_alloc_io(el, &io);
+    ASSERT_EQ(rc, KS_OK);
+    
+    io->fd = 3;
+    io->cb = (void *) 123;
+
+    epoll_ctl_mock_once(el->ep_fd, EPOLL_CTL_ADD, io->fd, -1);
+    rc = ks_eventloop_add(el, io);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_OK);
 }

@@ -5,6 +5,9 @@
 #include <kickstart/eventloop.h>
 #include <kickstart/ringbuffer.h>
 
+#ifndef __NALA
+#include <test/log/nala_mocks.h>
+#endif
 /*
  * Planned tests for core logging functionallity:
  *
@@ -384,3 +387,97 @@ TEST(log_incorrect_hdr_magic)
     rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, KS_OK);
 }
+
+TEST(log_init_fail1)
+{
+    int rc;
+    struct ks_log *log;
+    struct ks_eventloop_ctx *ctx;
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_init(&log, NULL, 16);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_init(NULL, ctx, 16);
+    ASSERT_EQ(rc, KS_ERR);
+
+    ks_ringbuffer_init_mock_once(16, KS_ERR);
+    rc = ks_log_init(&log, ctx, 16);
+    ASSERT_EQ(rc, KS_ERR);
+    ks_ringbuffer_init_mock_disable();
+
+
+    ks_ll_init_mock_none();
+    ks_ll_init_mock_none();
+    ks_ll_init_mock_once(KS_ERR);
+    rc = ks_log_init(&log, ctx, 16);
+    ASSERT_EQ(rc, KS_ERR);
+    ks_ll_init_mock_disable();
+
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+TEST(log_add_sink_fail)
+{
+    int rc;
+    struct ks_log l1;
+    struct ks_log_sink *s1;
+
+    rc = ks_log_add_sink(NULL, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_add_sink(&l1, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_add_sink(&l1, &s1, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    ks_eventloop_alloc_io_mock_once(KS_ERR);
+    rc = ks_log_add_sink(&l1, &s1, 1);
+    ASSERT_EQ(rc, KS_ERR);
+
+}
+
+TEST(log_free_fail)
+{
+    int rc;
+    struct ks_log *l = NULL;
+
+    rc = ks_log_free(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_free(&l);
+    ASSERT_EQ(rc, KS_ERR);
+
+    l = (struct ks_log *) 1;
+
+    ks_ll_free_mock_once(KS_ERR);
+    rc = ks_log_free(&l);
+    ASSERT_EQ(rc, KS_ERR);
+    ks_ll_free_mock_disable();
+
+    l = malloc(sizeof(struct ks_log));
+    ks_ringbuffer_free_mock_once(KS_ERR);
+    ks_ll_free_mock(KS_OK);
+    rc = ks_log_free(&l);
+    ASSERT_EQ(rc, KS_ERR);
+    ks_ringbuffer_free_mock_disable();
+    free(l);
+
+
+    l = malloc(sizeof(struct ks_log));
+    ks_ll_free_mock_once(KS_OK);
+    ks_ll_free_mock_once(KS_ERR);
+    rc = ks_log_free(&l);
+    ASSERT_EQ(rc, KS_ERR);
+    ks_ll_free_mock_disable();
+
+    free(l);
+}
+
