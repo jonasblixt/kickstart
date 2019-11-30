@@ -146,3 +146,30 @@ TEST(ll_pop)
     rc = ks_ll_free(&ll);
     ASSERT_EQ(rc, KS_OK);
 }
+
+TEST(ll_null_args)
+{
+    int rc;
+    int p;
+
+    rc = ks_ll_data2item(NULL, &p, (struct ks_ll_item **) &p);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_data2item((struct ks_ll *) &p, NULL, (struct ks_ll_item **) &p);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_data2item((struct ks_ll *) &p, &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_pop(NULL, (void **) &p);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_pop((struct ks_ll *) &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_remove(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_ll_free(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+}

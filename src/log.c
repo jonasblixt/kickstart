@@ -222,13 +222,15 @@ err_free_log:
 
 int ks_log_add_source(struct ks_log *log, struct ks_log_source **new_src, int fd)
 {
-    struct ks_eventloop_ctx *ctx = log->el;
+    struct ks_eventloop_ctx *ctx;
     struct ks_eventloop_io *io;
     struct ks_log_source *src;
     int rc;
 
     if (!log)
         return KS_ERR;
+
+    ctx = log->el;
 
     if (!ctx)
         return KS_ERR;

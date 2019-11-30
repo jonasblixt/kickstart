@@ -298,3 +298,35 @@ TEST(ev_loop_test_pipe)
     ASSERT_EQ(rc, 0);
 }
 
+TEST(ev_nullargs)
+{
+    int p;
+    int rc;
+
+    rc = ks_eventloop_init(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_remove(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_remove((struct ks_eventloop_ctx *) &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_free(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_alloc_io(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_alloc_io((struct ks_eventloop_ctx *) &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_add(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_loop_once(NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_loop_once((struct ks_eventloop_ctx *) &p, 0);
+    ASSERT_EQ(rc, KS_ERR);
+}

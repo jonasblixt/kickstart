@@ -146,3 +146,45 @@ TEST(log_double_free)
     rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, KS_OK);
 }
+
+TEST(log_nullargs)
+{
+    int p;
+    int rc;
+
+    rc = ks_log_init(NULL, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_init((struct ks_log **)&p, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_init((struct ks_log **)&p, (struct ks_eventloop_ctx *)&p, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_set_input_formatter(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_set_input_formatter((struct ks_log_source *) &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_set_output_formatter(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_set_output_formatter((struct ks_log_sink *) &p, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    char *c;
+
+    c = (char *) ks_log_level_to_string(0);
+    ASSERT_EQ(c, "INVALID");
+
+    c = (char *) ks_log_level_to_string(99999);
+    ASSERT_EQ(c, "INVALID");
+
+    rc = ks_log_add_source(NULL, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+
+    struct ks_log l;
+    rc = ks_log_add_source(&l, NULL, 0);
+    ASSERT_EQ(rc, KS_ERR);
+}

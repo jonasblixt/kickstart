@@ -6,8 +6,13 @@
 
 int ks_eventloop_init(struct ks_eventloop_ctx **new_ctx)
 {
-    struct ks_eventloop_ctx *ctx = malloc(sizeof(struct ks_eventloop_ctx));
+    struct ks_eventloop_ctx *ctx;
     int rc;
+
+    if (!new_ctx)
+        return KS_ERR;
+
+    ctx = malloc(sizeof(struct ks_eventloop_ctx));
 
     if (!ctx)
         return KS_OK;
