@@ -68,7 +68,7 @@ TEST(ev_loop_process_one)
     ASSERT_EQ(rc, 0);
     ASSERT_EQ(timer_cb_fired, true);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 
@@ -117,7 +117,6 @@ TEST(ev_loop_remove_io)
     ASSERT_EQ(timer_cb_fired, true);
 
     rc = ks_eventloop_remove(ctx, io);
-
     ASSERT_EQ(rc, KS_OK);
 
 	rc = timerfd_settime(tfd, 0, &ts, NULL);
@@ -128,7 +127,7 @@ TEST(ev_loop_remove_io)
     ASSERT_EQ(rc, KS_ERR);
     ASSERT_EQ(timer_cb_fired, false);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 
@@ -178,7 +177,7 @@ TEST(ev_loop_process_one_timeout)
     ASSERT_EQ(rc, KS_ERR);
     ASSERT_EQ(timer_cb_fired, false);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 
@@ -195,7 +194,7 @@ TEST(ev_loop_stop)
     rc = ks_eventloop_stop(ctx);
     ASSERT_EQ(rc, KS_ERR);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 
@@ -245,7 +244,7 @@ TEST(ev_loop_stop2)
     rc = ks_eventloop_loop(ctx);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 
@@ -295,7 +294,7 @@ TEST(ev_loop_test_pipe)
     close(fds[0]);
     close(fds[1]);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, 0);
 }
 

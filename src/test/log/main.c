@@ -10,14 +10,10 @@
  *
  *  o Multiple sinks
  *  o Event roll-over
- *  o Remove sinks / sources
- *  o Free log object
- *      - Check and free sink/sources buffers
  *  o Test too large messages
  *  o Corrupt header
  *  o Buffer level callbacks per sink
  *  o Flushing
- *  o Stop/start
  *  o Error collection
  *  o Error callbacks
  *
@@ -120,9 +116,33 @@ TEST(log_basic)
     rc = ks_log_free_sink(sink0);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_free(log);
+    rc = ks_log_free(&log);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_eventloop_free(ctx);
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+
+TEST(log_double_free)
+{
+    struct ks_eventloop_ctx *ctx;
+    struct ks_log *log;
+    int rc;
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_eventloop_free(&ctx);
     ASSERT_EQ(rc, KS_OK);
 }

@@ -1,10 +1,6 @@
-TEST_TARGETS = 
-TESTS =
-
 TEST_BASE_SRC = 3pp/nala/nala.c
 CFLAGS += -I 3pp/nala -I build-test/
 
--include $(wildcard test/*/makefile.mk)
 
 %-test-target:
 	$(info -------- TEST $(TEST_NAME) BEGIN --------)

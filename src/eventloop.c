@@ -1,12 +1,14 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <kickstart/eventloop.h>
-
+#include <kickstart/ll.h>
 
 int ks_eventloop_init(struct ks_eventloop_ctx **new_ctx)
 {
     struct ks_eventloop_ctx *ctx = malloc(sizeof(struct ks_eventloop_ctx));
-    
+    int rc;
+
     if (!ctx)
         return KS_OK;
 
@@ -17,10 +19,27 @@ int ks_eventloop_init(struct ks_eventloop_ctx **new_ctx)
     ctx->ep_fd = epoll_create(KS_EVENTLOOP_MAX_EVENTS);
 
     if (ctx->ep_fd == -1)
-        return KS_ERR;
+    {
+        rc = KS_ERR;
+        goto err_free_ctx;
+    }
+
+    if (ks_ll_init(&ctx->ll) != KS_OK)
+    {
+        rc = KS_ERR;
+        goto err_close_epoll;
+    }
 
     ctx->run = true;
     return KS_OK;
+
+err_close_epoll:
+    close(ctx->ep_fd);
+err_free_ctx:
+    free(ctx);
+    *new_ctx = NULL;
+
+    return rc;
 }
 
 int ks_eventloop_stop(struct ks_eventloop_ctx *ctx)
@@ -37,49 +56,36 @@ int ks_eventloop_stop(struct ks_eventloop_ctx *ctx)
 int ks_eventloop_remove(struct ks_eventloop_ctx *ctx,
                         struct ks_eventloop_io *io)
 {
-    int rc = KS_OK;
-
-    if (ctx == NULL || io == NULL)
-    {
-        rc = KS_ERR;
-        goto eventloop_remove_err_out;
-    }
+    if (!ctx)
+        return KS_ERR;
+    if (!io)
+        return KS_ERR;
 
     if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_DEL, io->fd, NULL) == -1)
-        rc = KS_ERR;
+        return KS_ERR;
 
-    if (io->prev)
-        io->prev->next = io->next;
+    struct ks_ll_item *item;
 
-    if (io->next)
-        io->next->prev = io->prev;
-
-    free(io);
-
-    if (io == ctx->ios)
-        ctx->ios = NULL;
-
-    io = NULL;
-
-eventloop_remove_err_out:
-    return rc;
+    if (ks_ll_data2item(ctx->ll, io, &item) != KS_OK)
+    {
+        return KS_ERR;
+    }
+    return ks_ll_remove(ctx->ll, item);
 }
 
-int ks_eventloop_free(struct ks_eventloop_ctx *ctx)
+int ks_eventloop_free(struct ks_eventloop_ctx **ctx)
 {
     if (!ctx)
         return KS_ERR;
 
-    struct ks_eventloop_io *io = ctx->ios;
+    if (!(*ctx))
+        return KS_ERR;
 
-    while (io)
-    {
-        struct ks_eventloop_io *p = io;
-        io = io->next;
-        ks_eventloop_remove(ctx, p);
-    }
+    ks_ll_free(&(*ctx)->ll);
+    close((*ctx)->ep_fd);
 
-    free(ctx);
+    free(*ctx);
+    *ctx = NULL;
     return KS_OK;
 }
 
@@ -91,32 +97,12 @@ int ks_eventloop_alloc_io(struct ks_eventloop_ctx *ctx,
     if (!new_io)
         return KS_ERR;
 
-    struct ks_eventloop_io *io = malloc(sizeof(struct ks_eventloop_io));
+    struct ks_eventloop_io *io;
+    int rc = ks_ll_append2(ctx->ll, (void **) &io,
+                                sizeof(struct ks_eventloop_io));
+
     *new_io = io;
-    memset(io, 0, sizeof(*io));
-
-    if (!ctx->ios)
-    {
-        ctx->ios = io;
-    }
-    else
-    {
-        struct ks_eventloop_io *last = ctx->ios;
-
-        while (last)
-        {
-            if (!last->next)
-            {
-                last->next = io;
-                io->prev = last;
-                break;
-            }
-                
-            last = last->next;
-        }
-    }
-
-    return KS_OK;
+    return rc;
 }
 
 

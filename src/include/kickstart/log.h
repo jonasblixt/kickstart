@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <kickstart/kickstart.h>
 #include <kickstart/eventloop.h>
+#include <kickstart/ll.h>
 
 /**
  *  - KICKSTART LOG SYSTEM -
@@ -117,8 +118,8 @@ struct ks_log
 {
     struct ks_ringbuffer *rb;
     struct ks_eventloop_ctx *el;
-    struct ks_log_sink *sinks;
-    struct ks_log_source *sources;
+    struct ks_ll *sinks;
+    struct ks_ll *sources;
 };
 
 struct ks_log_source
@@ -130,8 +131,6 @@ struct ks_log_source
     ks_log_input_formatter_t input_formatter;
     struct ks_log *log;
     struct ks_eventloop_io *io;
-    struct ks_log_source *prev;
-    struct ks_log_source *next;
 };
 
 struct ks_log_sink
@@ -143,8 +142,6 @@ struct ks_log_sink
     struct ks_ringbuffer_tail *t;
     struct ks_eventloop_io *io;
     struct ks_log *log;
-    struct ks_log_sink *prev;
-    struct ks_log_sink *next;
 };
 
 struct ks_log_entry_header
@@ -184,6 +181,6 @@ int ks_log_set_source_name(struct ks_log_source *src, const char *name);
 char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id);
 int ks_log_free_source(struct ks_log_source *src);
 int ks_log_free_sink(struct ks_log_sink *sink);
-int ks_log_free(struct ks_log *log);
+int ks_log_free(struct ks_log **log);
 
 #endif  // INCLUDE_KICKSTART_LOG_H_

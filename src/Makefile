@@ -17,7 +17,13 @@ BUILD_DIR = build-$(BOARD)
 
 $(shell mkdir -p $(BUILD_DIR))
 include make/common.mk
+
+include test/ll/makefile.mk
+include test/ringbuffer/makefile.mk
+include test/eventloop/makefile.mk
+include test/log/makefile.mk
 include make/test.mk
+
 
 LIBS  = blkid
 LIBS += uuid
@@ -35,6 +41,11 @@ ROOTDEVICE ?= mmcblk0
 ifeq ($(BOARD),test)
 CFLAGS  += -fprofile-arcs -ftest-coverage -g -O0
 CFLAGS += -fsanitize=address
+CFLAGS += -fsanitize=undefined
+CFLAGS += -fsanitize=null
+CFLAGS += -fsanitize=unreachable
+CFLAGS += -fsanitize=signed-integer-overflow
+CFLAGS += -fsanitize=alignment
 else
 CFLAGS  += -O2
 endif
