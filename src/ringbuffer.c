@@ -29,10 +29,26 @@ ringbuffer_init_err1:
 
 int ks_ringbuffer_free(struct ks_ringbuffer *rb)
 {
+    struct ks_ringbuffer_tail *next = rb->tails;
+
     if (rb == NULL)
         return KS_ERR;
 
+    if (next)
+    {
+        do
+        {
+            struct ks_ringbuffer_tail *p = next;
+            next = next->next;
+            free(p);
+        } while (next);
+    }
+
+    if (rb->bfr)
+        free(rb->bfr);
+
     free(rb);
+    rb = NULL;
 
     return KS_OK;
 }
@@ -43,27 +59,61 @@ int ks_ringbuffer_new_tail(struct ks_ringbuffer *rb,
     if (rb == NULL)
         return KS_ERR;
 
-    if (rb->tails == NULL)
-    {
-        rb->tails = malloc(sizeof(struct ks_ringbuffer_tail));
-        if (rb->tails == NULL)
-            return KS_ERR;
-        memset(rb->tails, 0, sizeof(struct ks_ringbuffer_tail));
-        (*t) = rb->tails;
-        return KS_OK;
-    }
+    *t = malloc(sizeof(struct ks_ringbuffer_tail));
 
-    struct ks_ringbuffer_tail *last = rb->tails;
-
-    for (;last->next;last = last->next) {};
-
-    last->next = malloc(sizeof(struct ks_ringbuffer_tail));
-
-    if (last->next == NULL)
+    if (*t == NULL)
         return KS_ERR;
 
-    memset(last->next, 0, sizeof(struct ks_ringbuffer_tail));
-    (*t) = last->next;
+    memset(*t, 0, sizeof(struct ks_ringbuffer_tail));
+
+    (*t)->rb = rb;
+
+    if (!rb->tails)
+    {
+        rb->tails = *t;
+    }
+    else
+    {
+        struct ks_ringbuffer_tail *last = rb->tails;
+
+        while (last)
+        {
+            if (!last->next)
+            {
+                last->next = *t;
+                (*t)->prev = last;
+                break;
+            }
+            else
+            {
+                last = last->next;
+            }
+        }
+    }
+
+    return KS_OK;
+}
+
+int ks_ringbuffer_remove_tail(struct ks_ringbuffer_tail *t)
+{
+    if (!t)
+        return KS_ERR;
+
+    struct ks_ringbuffer *rb = t->rb;
+
+    if (!t->prev)
+    {
+        rb->tails = t->next;
+        free(t);
+        t = NULL;
+    }
+    else
+    {
+        struct ks_ringbuffer_tail *prev = t->prev;
+        prev->next = t->next;
+        free(t);
+        t = NULL;
+    }
 
     return KS_OK;
 }
@@ -157,7 +207,7 @@ int ks_ringbuffer_read(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
 {
     uint64_t tail_index = t->tail_index;
     uint64_t available = 0;
-    
+
     if (rb == NULL)
         return KS_ERR;
     if (t == NULL)
@@ -187,7 +237,7 @@ int ks_ringbuffer_read(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
 
         if (sz > available)
             return KS_ERR;
-    
+
         if (sz <= chunk1_sz)
         {
             memcpy(data, &rb->bfr[tail_index], sz);
@@ -197,7 +247,7 @@ int ks_ringbuffer_read(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
         else
         {
             memcpy(data, &rb->bfr[tail_index], chunk1_sz);
-            
+
             uint64_t remainder = sz - chunk1_sz;
             memcpy(&data[chunk1_sz], rb->bfr,
                    remainder);

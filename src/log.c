@@ -118,6 +118,7 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
             return;
     }
 
+
     if (sink->write_cb)
         written = sink->write_cb(io->fd, sink->buf, data_to_write);
     else
@@ -185,16 +186,28 @@ int ks_log_init(struct ks_log **log, struct ks_eventloop_ctx *el, size_t bfr_sz)
     return KS_OK;
 }
 
-int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd)
+int ks_log_add_source(struct ks_log *log, struct ks_log_source **new_src, int fd)
 {
     struct ks_eventloop_ctx *ctx = log->el;
-    struct ks_eventloop_io *io = ks_eventloop_alloc();
+    struct ks_eventloop_io *io;
+    struct ks_log_source *src;
 
     if (!log)
         return KS_ERR;
 
     if (!ctx)
         return KS_ERR;
+
+    if (ks_eventloop_alloc_io(ctx, &io) != KS_OK)
+        return KS_ERR;
+
+    *new_src = malloc(sizeof(struct ks_log_source));
+    src = *new_src;
+
+    if (!src)
+        return KS_ERR;
+
+    memset(src, 0, sizeof(struct ks_log_source));
 
     io->fd = fd;
     io->data = src;
@@ -203,8 +216,6 @@ int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd)
 
     src->log = log;
     src->io = io;
-    src->name = NULL;
-    src->source_id = 0;
 
     if (log->sources == NULL)
     {
@@ -218,17 +229,34 @@ int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd)
             last = last->next;
 
         last->next = src;
+        src->prev = last;
     }
 
     return ks_eventloop_add(ctx, io);
 }
 
 
-int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd)
+int ks_log_add_sink(struct ks_log *log, struct ks_log_sink **new_sink, int fd)
 {
     struct ks_eventloop_ctx *ctx = log->el;
-    struct ks_eventloop_io *io = ks_eventloop_alloc();
+    struct ks_eventloop_io *io;
+    struct ks_log_sink *sink;
     int rc;
+
+    *new_sink = malloc(sizeof(struct ks_log_sink));
+    sink = *new_sink;
+
+    if (!sink)
+    {
+        return KS_ERR;
+    }
+
+    if (ks_eventloop_alloc_io(ctx, &io) != KS_OK)
+    {
+        free(sink);
+        return KS_ERR;
+    }
+    memset(sink, 0, sizeof(struct ks_log_sink));
 
     rc = ks_ringbuffer_new_tail(log->rb, &sink->t);
 
@@ -262,6 +290,7 @@ int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd)
         while (last->next)
             last = last->next;
         last->next = sink;
+        sink->prev = last;
     }
 
     sink->write_cb = NULL;
@@ -281,27 +310,6 @@ int ks_log_set_source_name(struct ks_log_source *src, const char *name)
     src->name = strdup(name);
     src->source_id = (uint32_t) crc32(0L, (const Bytef *)src->name,
                                   strlen(src->name));
-    if (!src->log->source_names)
-    {
-        src->log->source_names = malloc(sizeof(struct ks_log_string_list));
-        memset(src->log->source_names, 0, sizeof(struct ks_log_string_list));
-    }
-
-    struct ks_log_string_list *l = src->log->source_names;
-
-    while (l)
-    {
-        if (!l->next)
-        {
-            l->next = malloc(sizeof(struct ks_log_string_list));
-            memset(l->next, 0, sizeof(struct ks_log_string_list));
-            l->next->id = src->source_id;
-            l->next->string = strdup(name);
-            break;
-        }
-
-        l = l->next;
-    }
 
     return KS_OK;
 }
@@ -309,11 +317,94 @@ int ks_log_set_source_name(struct ks_log_source *src, const char *name)
 
 char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id)
 {
-    for (struct ks_log_string_list *l = log->source_names; l; l = l->next)
+    for (struct ks_log_source *s = log->sources; s; s = s->next)
     {
-        if (source_id == l->id)
-            return l->string;
+        if (source_id == s->source_id)
+            return s->name;
     }
 
     return "Invalid";
+}
+
+int ks_log_free_source(struct ks_log_source *src)
+{
+    if (!src)
+        return KS_ERR;
+
+    struct ks_log *log = src->log;
+
+    /* Remove source from evetloop */
+
+    if (ks_eventloop_remove(log->el, src->io) != KS_OK)
+        return KS_ERR;
+
+    struct ks_log_source *p = src->prev;
+
+    /* Remove source from log linked-list */
+
+    if (p)
+        p->next = src->next;
+    else
+        log->sources = src->next;
+
+    /* Free log name */
+
+    if (src->name)
+    {
+        free(src->name);
+        src->name = NULL;
+    }
+    
+    /* Free log object */
+    free(src);
+
+    return KS_OK;
+}
+
+int ks_log_free_sink(struct ks_log_sink *sink)
+{
+    if (!sink)
+        return KS_ERR;
+
+    struct ks_log *log = sink->log;
+
+    if (ks_eventloop_remove(log->el, sink->io) != KS_OK)
+        return KS_ERR;
+    
+    struct ks_log_sink *p = sink->prev;
+    
+    if (p)
+        p->next = sink->next;
+    else
+        log->sinks = sink->next;
+
+    free(sink);
+    sink = NULL;
+
+    return KS_OK;
+}
+
+int ks_log_free(struct ks_log *log)
+{
+    if (!log)
+        return KS_ERR;
+
+    for (struct ks_log_source *s = log->sources; s; s = s->next)
+    {
+        if (ks_log_free_source(s) != KS_OK)
+            return KS_ERR;
+    }
+
+    for (struct ks_log_sink *s = log->sinks; s; s = s->next)
+    {
+        if (ks_log_free_sink(s) != KS_OK)
+            return KS_ERR;
+    }
+    
+    if (ks_ringbuffer_free(log->rb) != KS_OK)
+        return KS_ERR;
+
+    free(log);
+    log = NULL;
+    return KS_OK;
 }

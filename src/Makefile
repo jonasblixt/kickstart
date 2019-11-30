@@ -34,6 +34,7 @@ ROOTDEVICE ?= mmcblk0
 
 ifeq ($(BOARD),test)
 CFLAGS  += -fprofile-arcs -ftest-coverage -g -O0
+CFLAGS += -fsanitize=address
 else
 CFLAGS  += -O2
 endif

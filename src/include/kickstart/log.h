@@ -112,12 +112,6 @@ typedef int (*ks_log_output_formatter_t) (struct ks_log_sink *sink,
 typedef int (*ks_log_write_t) (int fd,
                                const void *buf,
                                size_t count);
-struct ks_log_string_list
-{
-    uint32_t id;
-    char *string;
-    struct ks_log_string_list *next;
-};
 
 struct ks_log
 {
@@ -125,7 +119,6 @@ struct ks_log
     struct ks_eventloop_ctx *el;
     struct ks_log_sink *sinks;
     struct ks_log_source *sources;
-    struct ks_log_string_list *source_names;
 };
 
 struct ks_log_source
@@ -137,6 +130,7 @@ struct ks_log_source
     ks_log_input_formatter_t input_formatter;
     struct ks_log *log;
     struct ks_eventloop_io *io;
+    struct ks_log_source *prev;
     struct ks_log_source *next;
 };
 
@@ -149,6 +143,7 @@ struct ks_log_sink
     struct ks_ringbuffer_tail *t;
     struct ks_eventloop_io *io;
     struct ks_log *log;
+    struct ks_log_sink *prev;
     struct ks_log_sink *next;
 };
 
@@ -162,8 +157,8 @@ struct ks_log_entry_header
 } __attribute__ ((packed));
 
 int ks_log_init(struct ks_log **log, struct ks_eventloop_ctx *el, size_t bfr_sz);
-int ks_log_add_source(struct ks_log *log, struct ks_log_source *src, int fd);
-int ks_log_add_sink(struct ks_log *log, struct ks_log_sink *sink, int fd);
+int ks_log_add_source(struct ks_log *log, struct ks_log_source **src, int fd);
+int ks_log_add_sink(struct ks_log *log, struct ks_log_sink **sink, int fd);
 
 /**
  * An input formatter is necessary if the input data does not already
@@ -187,5 +182,8 @@ int ks_log_set_output_formatter(struct ks_log_sink *sink,
 const char * ks_log_level_to_string(enum ks_log_level lvl);
 int ks_log_set_source_name(struct ks_log_source *src, const char *name);
 char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id);
+int ks_log_free_source(struct ks_log_source *src);
+int ks_log_free_sink(struct ks_log_sink *sink);
+int ks_log_free(struct ks_log *log);
 
 #endif  // INCLUDE_KICKSTART_LOG_H_

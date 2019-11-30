@@ -18,6 +18,7 @@ struct ks_eventloop_ctx
 {
     int ep_fd;
     bool run;
+    struct ks_eventloop_io *ios;
 };
 
 struct ks_eventloop_io
@@ -26,11 +27,14 @@ struct ks_eventloop_io
     void *data;
     int fd;
     int flags;
+    struct ks_eventloop_io *prev;
+    struct ks_eventloop_io *next;
 };
 
-int ks_eventloop_init(struct ks_eventloop_ctx *ctx);
+int ks_eventloop_init(struct ks_eventloop_ctx **ctx);
 int ks_eventloop_stop(struct ks_eventloop_ctx *ctx);
-struct ks_eventloop_io * ks_eventloop_alloc(void);
+int ks_eventloop_alloc_io(struct ks_eventloop_ctx *ctx,
+                          struct ks_eventloop_io **new_io);
 int ks_eventloop_add(struct ks_eventloop_ctx *ctx,
                      struct ks_eventloop_io *io);
 int ks_eventloop_remove(struct ks_eventloop_ctx *ctx,
@@ -40,5 +44,6 @@ int ks_eventloop_io_oneshot(struct ks_eventloop_ctx *ctx,
                         struct ks_eventloop_io *io);
 int ks_eventloop_loop_once(struct ks_eventloop_ctx *ctx, int timeout_ms);
 int ks_eventloop_loop(struct ks_eventloop_ctx *ctx);
+int ks_eventloop_free(struct ks_eventloop_ctx *ctx);
 
 #endif  // INCLUDE_KICKSTART_EVENTLOOP_H_

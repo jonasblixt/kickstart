@@ -16,6 +16,8 @@ struct ks_ringbuffer_tail
     uint64_t truncated_bytes;
     uint64_t available;
     ks_ringbuffer_tail_advance_t tail_advance_cb;
+    struct ks_ringbuffer *rb;
+    struct ks_ringbuffer_tail *prev;
     struct ks_ringbuffer_tail *next;
 };
 
@@ -37,5 +39,7 @@ int ks_ringbuffer_set_tail_advance_cb(struct ks_ringbuffer_tail *t,
 int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz);
 int ks_ringbuffer_read(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
                        char *data, size_t sz);
+
+int ks_ringbuffer_remove_tail(struct ks_ringbuffer_tail *t);
 
 #endif  // INCLUDE_KICKSTART_RINGBUFFER_H_

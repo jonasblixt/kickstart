@@ -1,9 +1,18 @@
 #include <stdlib.h>
+#include <string.h>
 #include <kickstart/eventloop.h>
 
 
-int ks_eventloop_init(struct ks_eventloop_ctx *ctx)
+int ks_eventloop_init(struct ks_eventloop_ctx **new_ctx)
 {
+    struct ks_eventloop_ctx *ctx = malloc(sizeof(struct ks_eventloop_ctx));
+    
+    if (!ctx)
+        return KS_OK;
+
+    memset(ctx, 0, sizeof(struct ks_eventloop_ctx));
+    *new_ctx = ctx;
+
     ctx->run = false;
     ctx->ep_fd = epoll_create(KS_EVENTLOOP_MAX_EVENTS);
 
@@ -35,19 +44,81 @@ int ks_eventloop_remove(struct ks_eventloop_ctx *ctx,
         rc = KS_ERR;
         goto eventloop_remove_err_out;
     }
-    
+
     if (epoll_ctl(ctx->ep_fd, EPOLL_CTL_DEL, io->fd, NULL) == -1)
         rc = KS_ERR;
 
+    if (io->prev)
+        io->prev->next = io->next;
+
+    if (io->next)
+        io->next->prev = io->prev;
+
     free(io);
+
+    if (io == ctx->ios)
+        ctx->ios = NULL;
+
+    io = NULL;
+
 eventloop_remove_err_out:
     return rc;
 }
 
-struct ks_eventloop_io * ks_eventloop_alloc(void)
+int ks_eventloop_free(struct ks_eventloop_ctx *ctx)
 {
-    return malloc(sizeof(struct ks_eventloop_io));
+    if (!ctx)
+        return KS_ERR;
+
+    struct ks_eventloop_io *io = ctx->ios;
+
+    while (io)
+    {
+        struct ks_eventloop_io *p = io;
+        io = io->next;
+        ks_eventloop_remove(ctx, p);
+    }
+
+    free(ctx);
+    return KS_OK;
 }
+
+int ks_eventloop_alloc_io(struct ks_eventloop_ctx *ctx,
+                          struct ks_eventloop_io **new_io)
+{
+    if (!ctx)
+        return KS_ERR;
+    if (!new_io)
+        return KS_ERR;
+
+    struct ks_eventloop_io *io = malloc(sizeof(struct ks_eventloop_io));
+    *new_io = io;
+    memset(io, 0, sizeof(*io));
+
+    if (!ctx->ios)
+    {
+        ctx->ios = io;
+    }
+    else
+    {
+        struct ks_eventloop_io *last = ctx->ios;
+
+        while (last)
+        {
+            if (!last->next)
+            {
+                last->next = io;
+                io->prev = last;
+                break;
+            }
+                
+            last = last->next;
+        }
+    }
+
+    return KS_OK;
+}
+
 
 int ks_eventloop_add(struct ks_eventloop_ctx *ctx,
                      struct ks_eventloop_io *io)

@@ -71,49 +71,58 @@ TEST(log_basic)
 {
     int rc;
     int fds[2];
-    struct ks_eventloop_ctx ctx;
+    struct ks_eventloop_ctx *ctx;
     struct ks_log *log;
-    const char *msg = "Hello";
+    struct ks_log_sink *sink0;
+    struct ks_log_source *src0;
+    const char *msg = "Hello\n";
 
     pipe(fds);
-    
 
     rc = ks_eventloop_init(&ctx);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_init(&log, &ctx, 1024);
+    rc = ks_log_init(&log, ctx, 1024);
     ASSERT_EQ(rc, KS_OK);
 
-    struct ks_log_source src0;
     rc = ks_log_add_source(log, &src0, fds[0]);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_set_input_formatter(&src0, test_input_formatter);
+    rc = ks_log_set_input_formatter(src0, test_input_formatter);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_set_source_name(&src0, "test");
+    rc = ks_log_set_source_name(src0, "test");
     ASSERT_EQ(rc, KS_OK);
 
-    struct ks_log_sink sink0;
     rc = ks_log_add_sink(log, &sink0, STDOUT_FILENO);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_log_set_output_formatter(&sink0, test_output_formatter);
-    write(fds[1], msg, 6);
+    rc = ks_log_set_output_formatter(sink0, test_output_formatter);
+    write(fds[1], msg, 7);
 
-    rc = ks_eventloop_loop_once(&ctx, 500);
+    rc = ks_eventloop_loop_once(ctx, 500);
     ASSERT_EQ(rc, KS_OK);
 
-    rc = ks_eventloop_loop_once(&ctx, 500);
+    rc = ks_eventloop_loop_once(ctx, 500);
     ASSERT_EQ(rc, KS_OK);
 
     CAPTURE_OUTPUT(message, msgs_stderr)
     {
-        rc = ks_eventloop_loop_once(&ctx, 500);
+        rc = ks_eventloop_loop_once(ctx, 500);
         ASSERT_EQ(rc, KS_OK);
     }
-    printf("out: '%s'\n", message);
 
-    //ASSERT_SUBSTRING(message, "1 INFO test: Hello");
-    ASSERT_EQ(strcmp(message, "1 INFO test: Hello"), 0);
+    ASSERT_EQ(message, "1 INFO test: Hello\n");
+
+    rc = ks_log_free_source(src0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free_sink(sink0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(ctx);
+    ASSERT_EQ(rc, KS_OK);
 }
