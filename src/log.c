@@ -135,9 +135,9 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
 int ks_log_set_input_formatter(struct ks_log_source *src,
                                ks_log_input_formatter_t formatter)
 {
-    if (src == NULL)
+    if (!src)
         return KS_ERR;
-    if (formatter == NULL)
+    if (!formatter)
         return KS_ERR;
 
     src->input_formatter = formatter;

@@ -1,6 +1,6 @@
 TEST_BASE_SRC = 3pp/nala/nala.c
 CFLAGS += -I 3pp/nala -I build-test/
-
+CFLAGS += -I build-test/ -I .
 
 %-test-target:
 	$(info -------- TEST $(TEST_NAME) BEGIN --------)
@@ -22,7 +22,7 @@ $(1)-test-mock: TEST_NAME=$(2)
 build-test/test/$(1)/nala_mocks.c: $($(2)_SRCS)
 	$$(info MOCK $(1))
 	@mkdir -p build-test/test/$(1)
-	@$(CC) $$(CFLAGS) -E test/$(1)/*.c | \
+	@$(CC) $$(CFLAGS) -E test/$(1)/*.c -D__NALA -I .| \
 		 nala generate_mocks
 	@mv nala_mocks.*  build-test/test/$(1)/	
 

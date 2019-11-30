@@ -3,93 +3,84 @@
 #include <string.h>
 #include <kickstart/ringbuffer.h>
 
-int ks_ringbuffer_init(struct ks_ringbuffer **rb, size_t sz)
+int ks_ringbuffer_init(struct ks_ringbuffer **new_rb, size_t sz)
 {
-    *rb = malloc(sizeof(struct ks_ringbuffer));
+    struct ks_ringbuffer *rb;
+    int rc;
 
-    if ((*rb) == NULL)
-        goto ringbuffer_init_err1;
-    memset((*rb), 0, sizeof(struct ks_ringbuffer));
+    if (!new_rb)
+        return KS_ERR;
+    if (!sz)
+        return KS_ERR;
 
-    (*rb)->bfr = malloc(sz);
-    (*rb)->bfr_sz = sz;
+    rb = malloc(sizeof(struct ks_ringbuffer));
 
-    if ((*rb)->bfr == NULL)
+    if (!rb)
     {
+        rc = KS_ERR;
+        goto ringbuffer_init_err1;
+    }
+
+    memset(rb, 0, sizeof(struct ks_ringbuffer));
+
+    rb->bfr = malloc(sz);
+    rb->bfr_sz = sz;
+
+    if (rb->bfr == NULL)
+    {
+        rc = KS_ERR;
         goto ringbuffer_init_err2;
     }
 
+    if (ks_ll_init(&rb->tails) != KS_OK)
+    {
+        rc = KS_ERR;
+        goto err_free_buffer;
+    }
+
+    *new_rb = rb;
     return KS_OK;
 
+err_free_buffer:
+    free(rb->bfr);
 ringbuffer_init_err2:
-    free(*rb);
+    free(rb);
 ringbuffer_init_err1:
-    return KS_ERR;
+    return rc;
 }
 
 int ks_ringbuffer_free(struct ks_ringbuffer *rb)
 {
-    struct ks_ringbuffer_tail *next = rb->tails;
-
-    if (rb == NULL)
+    if (!rb)
         return KS_ERR;
 
-    if (next)
-    {
-        do
-        {
-            struct ks_ringbuffer_tail *p = next;
-            next = next->next;
-            free(p);
-        } while (next);
-    }
+    if (ks_ll_free(&rb->tails))
+        return KS_ERR;
 
     if (rb->bfr)
         free(rb->bfr);
 
     free(rb);
-    rb = NULL;
 
     return KS_OK;
 }
 
 int ks_ringbuffer_new_tail(struct ks_ringbuffer *rb,
-                           struct ks_ringbuffer_tail **t)
+                           struct ks_ringbuffer_tail **new_t)
 {
-    if (rb == NULL)
+    struct ks_ringbuffer_tail *t;
+
+    if (!rb)
+        return KS_ERR;
+    if (!new_t)
         return KS_ERR;
 
-    *t = malloc(sizeof(struct ks_ringbuffer_tail));
-
-    if (*t == NULL)
+    if (ks_ll_append2(rb->tails, (void **) &t,
+                    sizeof(struct ks_ringbuffer_tail)) != KS_OK)
         return KS_ERR;
 
-    memset(*t, 0, sizeof(struct ks_ringbuffer_tail));
-
-    (*t)->rb = rb;
-
-    if (!rb->tails)
-    {
-        rb->tails = *t;
-    }
-    else
-    {
-        struct ks_ringbuffer_tail *last = rb->tails;
-
-        while (last)
-        {
-            if (!last->next)
-            {
-                last->next = *t;
-                (*t)->prev = last;
-                break;
-            }
-            else
-            {
-                last = last->next;
-            }
-        }
-    }
+    t->rb = rb;
+    *new_t = t;
 
     return KS_OK;
 }
@@ -100,30 +91,18 @@ int ks_ringbuffer_remove_tail(struct ks_ringbuffer_tail *t)
         return KS_ERR;
 
     struct ks_ringbuffer *rb = t->rb;
+    struct ks_ll_item *item;
+    ks_ll_data2item(rb->tails, t, &item);
 
-    if (!t->prev)
-    {
-        rb->tails = t->next;
-        free(t);
-        t = NULL;
-    }
-    else
-    {
-        struct ks_ringbuffer_tail *prev = t->prev;
-        prev->next = t->next;
-        free(t);
-        t = NULL;
-    }
-
-    return KS_OK;
+    return ks_ll_remove(rb->tails, item);
 }
 
 int ks_ringbuffer_set_tail_advance_cb(struct ks_ringbuffer_tail *t,
                                       ks_ringbuffer_tail_advance_t cb)
 {
-    if (t == NULL)
+    if (!t)
         return KS_ERR;
-    if (cb == NULL)
+    if (!cb)
         return KS_ERR;
 
     t->tail_advance_cb = cb;
@@ -135,8 +114,10 @@ static int process_tails(struct ks_ringbuffer *rb, uint64_t start,
                          uint64_t stop)
 {
 
-    for (struct ks_ringbuffer_tail *t = rb->tails; t != NULL; t = t->next)
+    ks_ll_foreach(rb->tails, i)
     {
+        struct ks_ringbuffer_tail *t = (struct ks_ringbuffer_tail *) i->data;
+
         if (t->tail_index == rb->head_index)
             continue;
 
@@ -156,9 +137,9 @@ static int process_tails(struct ks_ringbuffer *rb, uint64_t start,
 
 int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz)
 {
-    if (rb == NULL)
+    if (!rb)
         return KS_ERR;
-    if (data == NULL)
+    if (!data)
         return KS_ERR;
 
     uint64_t available1 = rb->bfr_sz - rb->head_index;
@@ -172,9 +153,11 @@ int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz)
         memcpy(head, data, sz);
         process_tails(rb, rb->head_index, rb->head_index + sz);
         rb->head_index = (rb->head_index+sz)%rb->bfr_sz;
-
-        for (struct ks_ringbuffer_tail *t = rb->tails; t != NULL; t = t->next)
+        
+        ks_ll_foreach(rb->tails, i)
         {
+            struct ks_ringbuffer_tail *t =
+                        (struct ks_ringbuffer_tail *) i->data;
             t->available = t->available + sz;
 
             if (t->available > rb->bfr_sz)
@@ -190,8 +173,11 @@ int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz)
         memcpy(rb->bfr, &data[available1], remainder);
         rb->head_index = remainder;
 
-        for (struct ks_ringbuffer_tail *t = rb->tails; t != NULL; t = t->next)
+        ks_ll_foreach(rb->tails, i)
         {
+            struct ks_ringbuffer_tail *t =
+                        (struct ks_ringbuffer_tail *) i->data;
+
             t->available = t->available + available1 + remainder;
 
             if (t->available > rb->bfr_sz)
@@ -205,17 +191,19 @@ int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz)
 int ks_ringbuffer_read(struct ks_ringbuffer *rb, struct ks_ringbuffer_tail *t,
                        char *data, size_t sz)
 {
-    uint64_t tail_index = t->tail_index;
+    uint64_t tail_index;
     uint64_t available = 0;
 
-    if (rb == NULL)
+    if (!rb)
         return KS_ERR;
-    if (t == NULL)
+    if (!t)
         return KS_ERR;
     if (sz > rb->bfr_sz)
         return KS_ERR;
     if (sz > t->available)
         return KS_ERR;
+
+    tail_index = t->tail_index;
 
     if (tail_index < rb->head_index)
     {

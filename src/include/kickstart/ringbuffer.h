@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <kickstart/kickstart.h>
+#include <kickstart/ll.h>
 
 struct ks_ringbuffer_tail;
 struct ks_ringbuffer;
@@ -17,8 +18,6 @@ struct ks_ringbuffer_tail
     uint64_t available;
     ks_ringbuffer_tail_advance_t tail_advance_cb;
     struct ks_ringbuffer *rb;
-    struct ks_ringbuffer_tail *prev;
-    struct ks_ringbuffer_tail *next;
 };
 
 struct ks_ringbuffer
@@ -26,7 +25,7 @@ struct ks_ringbuffer
     char *bfr;
     size_t bfr_sz;
     uint64_t head_index;
-    struct ks_ringbuffer_tail *tails;
+    struct ks_ll *tails;
 };
 
 int ks_ringbuffer_init(struct ks_ringbuffer **rb, size_t sz);
