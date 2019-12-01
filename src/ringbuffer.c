@@ -153,7 +153,7 @@ int ks_ringbuffer_write(struct ks_ringbuffer *rb, const char *data, size_t sz)
         memcpy(head, data, sz);
         process_tails(rb, rb->head_index, rb->head_index + sz);
         rb->head_index = (rb->head_index+sz)%rb->bfr_sz;
-        
+
         ks_ll_foreach(rb->tails, i)
         {
             struct ks_ringbuffer_tail *t =

@@ -154,14 +154,16 @@ TEST(log_nullargs)
 {
     int p;
     int rc;
+    struct ks_log *l2;
+    struct ks_eventloop_ctx ctx;
 
     rc = ks_log_init(NULL, NULL, 0);
     ASSERT_EQ(rc, KS_ERR);
 
-    rc = ks_log_init((struct ks_log **)&p, NULL, 0);
+    rc = ks_log_init(&l2, NULL, 0);
     ASSERT_EQ(rc, KS_ERR);
 
-    rc = ks_log_init((struct ks_log **)&p, (struct ks_eventloop_ctx *)&p, 0);
+    rc = ks_log_init(&l2, &ctx, 0);
     ASSERT_EQ(rc, KS_ERR);
 
     rc = ks_log_set_input_formatter(NULL, NULL);
@@ -187,9 +189,41 @@ TEST(log_nullargs)
     rc = ks_log_add_source(NULL, NULL, 0);
     ASSERT_EQ(rc, KS_ERR);
 
+    rc = ks_log_free_sink(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    struct ks_log_sink s;
+    s.log = NULL;
+
+    rc = ks_log_free_sink(&s);
+    ASSERT_EQ(rc, KS_ERR);
+
+    struct ks_log_source src;
     struct ks_log l;
+    src.log = &l;
+    l.sources = NULL;
+
+    rc = ks_log_free_source(&src);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_free_source(NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    src.log = NULL;
+    rc = ks_log_set_source_name(NULL, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    rc = ks_log_set_source_name(&src, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    src.log = &l;
+    rc = ks_log_set_source_name(&src, NULL);
+    ASSERT_EQ(rc, KS_ERR);
+
+    l.el = NULL;
     rc = ks_log_add_source(&l, NULL, 0);
     ASSERT_EQ(rc, KS_ERR);
+
 }
 
 
@@ -481,3 +515,250 @@ TEST(log_free_fail)
     free(l);
 }
 
+
+static int test_input_formatter_err(struct ks_log_source *src,
+                                uint16_t sz,
+                                struct ks_log_entry_header *hdr)
+{
+    hdr->magic = KS_LOG_HEADER_MAGIC;
+    hdr->sz = sz;
+    hdr->source_id = src->source_id;
+    hdr->ts.tv_sec = 1;
+    hdr->ts.tv_nsec = 0;
+    hdr->lvl = KS_LOG_LEVEL_INFO;
+
+    return KS_ERR;
+}
+
+TEST(log_in_formatter_err)
+{
+    int rc;
+    int fds[2];
+    struct ks_eventloop_ctx *ctx;
+    struct ks_log *log;
+    struct ks_log_sink *sink0;
+    struct ks_log_source *src0;
+    const char *msg = "Hello\n";
+
+    pipe(fds);
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_source(log, &src0, fds[0]);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_set_input_formatter(src0, test_input_formatter_err);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_set_source_name(src0, "test");
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_sink(log, &sink0, STDOUT_FILENO);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_set_output_formatter(sink0, test_output_formatter);
+    write(fds[1], msg, 7);
+
+    rc = ks_eventloop_loop_once(ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_loop_once(ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    ASSERT_EQ(src0->stats.formatter_err, 1);
+
+    rc = ks_log_free_source(src0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free_sink(sink0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+
+TEST(log_data_read_fail)
+{
+    int rc;
+    int fds[2];
+    struct ks_eventloop_ctx *ctx;
+    struct ks_log *log;
+    struct ks_log_source *src0;
+    struct ks_log_entry_header hdr;
+    const char *msg = "Hello\n";
+
+    pipe(fds);
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_source(log, &src0, fds[0]);
+    ASSERT_EQ(rc, KS_OK);
+
+    hdr.magic = KS_LOG_HEADER_MAGIC;
+    hdr.sz = 10;
+    write(fds[1], &hdr, sizeof(struct ks_log_entry_header));
+    write(fds[1], msg, 7);
+
+    rc = ks_eventloop_loop_once(ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    ASSERT_EQ(src0->stats.data_err, 1);
+
+    rc = ks_log_free_source(src0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+
+TEST(log_data_read_fail2)
+{
+    int rc;
+    int fds[2];
+    struct ks_eventloop_ctx *ctx;
+    struct ks_log *log;
+    struct ks_log_source *src0;
+    struct ks_log_entry_header hdr;
+    const char *msg = "Hello\n";
+
+    pipe(fds);
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_source(log, &src0, fds[0]);
+    ASSERT_EQ(rc, KS_OK);
+
+    hdr.magic = KS_LOG_HEADER_MAGIC;
+    hdr.sz = 7;
+    write(fds[1], &hdr, sizeof(struct ks_log_entry_header));
+    write(fds[1], msg, 7);
+
+    ks_ringbuffer_write_mock_ignore_in_once(KS_ERR);
+    rc = ks_eventloop_loop_once(ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    ASSERT_EQ(src0->stats.data_err, 1);
+
+    rc = ks_log_free_source(src0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+TEST(log_data_read_fail3)
+{
+    int rc;
+    int fds[2];
+    struct ks_eventloop_ctx *ctx;
+    struct ks_log *log;
+    struct ks_log_source *src0;
+    struct ks_log_entry_header hdr;
+    const char *msg = "Hello\n";
+
+    pipe(fds);
+
+    rc = ks_eventloop_init(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, ctx, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_source(log, &src0, fds[0]);
+    ASSERT_EQ(rc, KS_OK);
+
+    hdr.magic = KS_LOG_HEADER_MAGIC;
+    hdr.sz = 7;
+    write(fds[1], &hdr, sizeof(struct ks_log_entry_header));
+    write(fds[1], msg, 7);
+
+    ks_ringbuffer_write_mock_ignore_in_once(KS_OK);
+    ks_ringbuffer_write_mock_ignore_in_once(KS_ERR);
+
+    rc = ks_eventloop_loop_once(ctx, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    ASSERT_EQ(src0->stats.formatter_err, 0);
+    ASSERT_EQ(src0->stats.header_err, 0);
+    ASSERT_EQ(src0->stats.data_err, 1);
+
+    rc = ks_log_free_source(src0);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(&ctx);
+    ASSERT_EQ(rc, KS_OK);
+}
+
+
+static int test_output_formatter_err(struct ks_log_sink *sink,
+                                 uint16_t sz,
+                                 uint16_t *new_sz,
+                                 struct ks_log_entry_header *hdr)
+{
+
+    return KS_ERR;
+}
+
+TEST(log_corrupt_data_in_rb)
+{
+    struct ks_eventloop_ctx *el;
+    struct ks_log *log;
+    struct ks_log_sink *sink0;
+    struct ks_log_entry_header hdr;
+    int fds[2];
+    int rc;
+
+    pipe(fds);
+
+    rc = ks_eventloop_init(&el);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_init(&log, el, 1024);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_add_sink(log, &sink0, STDOUT_FILENO);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_log_set_output_formatter(sink0, test_output_formatter_err);
+    ASSERT_EQ(rc, KS_OK);
+
+    hdr.magic = KS_LOG_HEADER_MAGIC;
+    ks_ringbuffer_write(log->rb, (const char *) &hdr, sizeof(hdr));
+
+    rc = ks_eventloop_loop_once(el, 500);
+    ASSERT_EQ(rc, KS_OK);
+
+    ASSERT_EQ(sink0->stats.formatter_err, 1);
+
+    rc = ks_log_free(&log);
+    ASSERT_EQ(rc, KS_OK);
+
+    rc = ks_eventloop_free(&el);
+    ASSERT_EQ(rc, KS_OK);
+}

@@ -114,12 +114,20 @@ typedef int (*ks_log_write_t) (int fd,
                                const void *buf,
                                size_t count);
 
+struct ks_log_stats
+{
+    uint64_t formatter_err;
+    uint64_t data_err;
+    uint64_t header_err;
+};
+
 struct ks_log
 {
     struct ks_ringbuffer *rb;
     struct ks_eventloop_ctx *el;
     struct ks_ll *sinks;
     struct ks_ll *sources;
+    struct ks_log_stats stats;
 };
 
 struct ks_log_source
@@ -131,6 +139,7 @@ struct ks_log_source
     ks_log_input_formatter_t input_formatter;
     struct ks_log *log;
     struct ks_eventloop_io *io;
+    struct ks_log_stats stats;
 };
 
 struct ks_log_sink
@@ -142,6 +151,7 @@ struct ks_log_sink
     struct ks_ringbuffer_tail *t;
     struct ks_eventloop_io *io;
     struct ks_log *log;
+    struct ks_log_stats stats;
 };
 
 struct ks_log_entry_header

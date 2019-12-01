@@ -45,30 +45,53 @@ static void log_in_cb(void *data, struct ks_eventloop_io *io)
     if (src->input_formatter)
     {
         read_data = read(io->fd, src->buf, KS_LOG_INPUT_BUF_SZ);
+
         rc = src->input_formatter(src, read_data, &hdr);
 
         if (rc != KS_OK)
+        {
+            src->stats.formatter_err++;
             return;
+        }
     }
     else
     {
+
         /* Data is already structured */
         read_data = read(io->fd, &hdr, sizeof(hdr));
 
         if (read_data != sizeof(hdr))
+        {
+            src->stats.header_err++;
             return;
+        }
 
         if (hdr.magic != KS_LOG_HEADER_MAGIC)
+        {
+            src->stats.header_err++;
             return;
+        }
 
         read_data = read(io->fd, src->buf, KS_LOG_INPUT_BUF_SZ);
 
         if (read_data != hdr.sz)
+        {
+            src->stats.data_err++;
             return;
+        }
     }
 
-    ks_ringbuffer_write(log->rb, (char *) &hdr, sizeof(hdr));
-    ks_ringbuffer_write(log->rb, src->buf, hdr.sz);
+    if (ks_ringbuffer_write(log->rb, (char *) &hdr, sizeof(hdr)) != KS_OK)
+    {
+        src->stats.data_err++;
+        return;
+    }
+
+    if (ks_ringbuffer_write(log->rb, src->buf, hdr.sz) != KS_OK)
+    {
+        src->stats.data_err++;
+        return;
+    }
 
     /* Trigger all sinks */
     ks_ll_foreach(log->sinks, s)
@@ -91,12 +114,18 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
                                sizeof(hdr));
 
     if (rc != KS_OK)
+    {
+        sink->stats.header_err++;
         return;
+    }
 
     ks_ringbuffer_read(log->rb, sink->t, sink->buf, hdr.sz);
 
     if (hdr.magic != KS_LOG_HEADER_MAGIC)
+    {
+        sink->stats.header_err++;
         return;
+    }
 
     data_to_write = hdr.sz;
 
@@ -105,7 +134,10 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
         rc = sink->output_formatter(sink, hdr.sz, &data_to_write, &hdr);
 
         if (rc != KS_OK)
+        {
+            sink->stats.formatter_err++;
             return;
+        }
     }
     else
     {
@@ -114,9 +146,11 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
         else
             written = write(io->fd, &hdr, sizeof(hdr));
 
-        /* TODO: Add error counters for write faliures */
         if (written != sizeof(hdr))
+        {
+            sink->stats.data_err++;
             return;
+        }
     }
 
 
@@ -126,7 +160,10 @@ static void log_out_cb(void *data, struct ks_eventloop_io *io)
         written = write(io->fd, sink->buf, data_to_write);
 
     if (written != data_to_write)
+    {
+        sink->stats.data_err++;
         return;
+    }
 
     /* Kick descriptor until buffer is empty */
     ks_eventloop_io_oneshot(log->el, sink->io);
