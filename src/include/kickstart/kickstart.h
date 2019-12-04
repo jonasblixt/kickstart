@@ -6,6 +6,11 @@
 #define KS_OK 0
 #define KS_ERR 1
 
+enum
+{
+    KS_KB = 1024,
+    KS_MB = KS_KB*KS_KB,
+};
 
 enum
 {

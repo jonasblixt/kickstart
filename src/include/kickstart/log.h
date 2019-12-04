@@ -192,5 +192,7 @@ char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id);
 int ks_log_free_source(struct ks_log_source *src);
 int ks_log_free_sink(struct ks_log_sink *sink);
 int ks_log_free(struct ks_log **log);
+int ks_log_init_stdout_sink(struct ks_log *log, struct ks_log_sink **sink);
+int ks_log_free_stdout_sink(struct ks_log_sink *sink);
 
 #endif  // INCLUDE_KICKSTART_LOG_H_

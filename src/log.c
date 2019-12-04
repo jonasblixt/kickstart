@@ -375,6 +375,8 @@ int ks_log_set_source_name(struct ks_log_source *src, const char *name)
 
 char * ks_log_source_id_to_string(struct ks_log *log, uint32_t source_id)
 {
+    if (source_id == 0)
+        return "KS";
 
     ks_ll_foreach(log->sources, item)
     {

@@ -10,6 +10,8 @@
 #include <linux/reboot.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <kickstart/eventloop.h>
+#include <kickstart/log.h>
 
 static int callback(struct nl_msg *msg, void *arg)
 {
@@ -78,10 +80,31 @@ static int ks_cat(const char *fn)
     return 0;
 }
 
+void timer_cb(void *data, struct ks_eventloop_io *io)
+{
+
+	struct itimerspec ts;
+	int msec = 500;
+    struct ks_log *log = (struct ks_log *) io->data;
+
+
+    ks_log_printf(log, KS_LOG_LEVEL_INFO, "Periodic timer: %i\n", 123);
+
+	ts.it_interval.tv_sec = 0;
+	ts.it_interval.tv_nsec = 0;
+	ts.it_value.tv_sec = msec / 1000;
+	ts.it_value.tv_nsec = (msec % 1000) * 1000000;
+
+	timerfd_settime(io->fd, 0, &ts, NULL);
+}
+
 int main(int argc, char **argv)
 {
+    struct ks_eventloop_ctx *el;
+    struct ks_log *log;
     struct termios ctrl;
     int err = 0;
+   
 
     tcgetattr(STDIN_FILENO, &ctrl);
     ctrl.c_lflag &= ~(ICANON | ECHO);
@@ -157,6 +180,39 @@ int main(int argc, char **argv)
     if (err < 0)
         printf ("addr_add error: %s\n", nl_geterror(err));
 
+    printf("Initializing eventloop...\n");
+    err = ks_eventloop_init(&el);
+
+    ks_log_init(&log, el, 16*KS_KB);
+    
+	struct itimerspec ts;
+    int tfd = timerfd_create(CLOCK_MONOTONIC, 0);
+	int msec = 500;
+
+	ts.it_interval.tv_sec = 0;
+	ts.it_interval.tv_nsec = 0;
+	ts.it_value.tv_sec = msec / 1000;
+	ts.it_value.tv_nsec = (msec % 1000) * 1000000;
+
+	err = timerfd_settime(tfd, 0, &ts, NULL);
+    struct ks_eventloop_io *io;
+    err = ks_eventloop_alloc_io(el, &io);
+    int i = 0;
+
+    io->fd = tfd;
+    io->cb = timer_cb;
+    io->data = log;
+    io->flags = EPOLLIN;
+
+    err = ks_eventloop_add(el, io);
+
+    struct ks_log_sink *stdout_sink;
+    ks_log_init_stdout_sink(log, &stdout_sink);
+
+    ks_log_printf(log, KS_LOG_LEVEL_INFO, "Test message: %i\n", 123);
+
+    ks_eventloop_loop(el);
+/*
     while (1)
     {
         int c = getc(stdin);
@@ -233,4 +289,5 @@ int main(int argc, char **argv)
             reboot(0x1234567);
         }
     }
+*/
 }
