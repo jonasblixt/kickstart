@@ -25,13 +25,12 @@
 
 #define NL_MAX_PAYLOAD 8192
 
-#define ks_log2(...) \
+#define ks_log(...) \
     do { FILE *fp = fopen("/dev/kmsg","w"); \
-    printf( "ks: " __VA_ARGS__); \
     fprintf(fp, "ks: " __VA_ARGS__); \
     fclose(fp); } while(0)
 
-#define ks_log(...) \
+#define ks_log2(...) \
     do { \
     printf( "ks: " __VA_ARGS__); \
     } while(0)
@@ -248,8 +247,6 @@ static int ks_switchroot(const char *root_device, const char *fs_type)
 
 	if (pid <= 0)
     {
-        ks_log ("clean-up...");
-
         /* Remove files from initrd */
         unlink("/init");
 
@@ -408,7 +405,7 @@ static int ks_init_device(const char *device_fn,
 
     gettimeofday(&t2,NULL);
 
-    printf ("Verification took %f us\n", (t2.tv_sec*1E6+t2.tv_usec)-
+    ks_log ("Verification took %f us\n", (t2.tv_sec*1E6+t2.tv_usec)-
                                          (t.tv_sec*1E6+t.tv_usec));
     return KS_OK;
 }
@@ -422,7 +419,7 @@ int main(int argc, char **argv)
     uint64_t hash_tree_offset = 0;
     uint8_t root_hash[32];
     struct kickstart_block ksb;
-    printf ("****** KS INIT *****\n");
+
     /* Initialize really early stuff, like mounting /proc, /sys etc */
     ks_early_init();
 

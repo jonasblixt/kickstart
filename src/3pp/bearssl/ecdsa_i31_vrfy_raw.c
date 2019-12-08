@@ -167,6 +167,5 @@ br_ecdsa_i31_vrfy_raw(const br_ec_impl *impl,
 	br_i31_sub(t1, n, br_i31_sub(t1, n, 0) ^ 1);
 	res &= ~br_i31_sub(t1, r, 1);
 	res &= br_i31_iszero(t1);
-    printf ("Result = %u\n",res);
 	return res;
 }

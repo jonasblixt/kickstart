@@ -68,6 +68,7 @@ C_SRCS  += ringbuffer.c
 C_SRCS  += log.c
 C_SRCS  += log_stdout_sink.c
 C_SRCS  += log_utils.c
+C_SRCS  += log_udp_server.c
 
 INITRD_C_SRCS = kickstart-initrd.c
 

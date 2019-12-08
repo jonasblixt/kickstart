@@ -54,4 +54,7 @@ src/build/*
 src/build-*/*
 nala_mocks.*
 src/report.json
-
+src/build*
+src/kickstart
+src/tools/ksmkfs/ksmkfs
+src/tools/ksmkfs/build*

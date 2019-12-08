@@ -195,4 +195,7 @@ int ks_log_free(struct ks_log **log);
 int ks_log_init_stdout_sink(struct ks_log *log, struct ks_log_sink **sink);
 int ks_log_free_stdout_sink(struct ks_log_sink *sink);
 
+int ks_log_init_udp_sink(struct ks_log *log, struct ks_log_sink **sink,
+                         const char *addr, int port);
+
 #endif  // INCLUDE_KICKSTART_LOG_H_

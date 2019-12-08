@@ -2,12 +2,13 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <termios.h>
+#include <linux/reboot.h>
 #include <netlink/netlink.h>
 #include <netlink/genl/genl.h>
 #include <netlink/route/link.h>
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
-#include <linux/reboot.h>
+#include <sys/sysinfo.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <kickstart/eventloop.h>
@@ -18,19 +19,17 @@ static int callback(struct nl_msg *msg, void *arg)
     struct nlmsghdr *nlh = nlmsg_hdr(msg);
     struct ifinfomsg *iface = NLMSG_DATA(nlh);
     struct rtattr *hdr = IFLA_RTA(iface);
+    struct ks_log *log = (struct ks_log *) arg;
     int remaining = nlh->nlmsg_len - NLMSG_LENGTH(sizeof(*iface));
 
-    //printf("Got something.\n");
-    //nl_msg_dump(msg, stdout);
 
     while (RTA_OK(hdr, remaining))
     {
-        //printf("Loop\n");
-
         if (hdr->rta_type == IFLA_IFNAME)
         {
-            printf("Found network interface %d: %s\n", iface->ifi_index,
-                                (char *) RTA_DATA(hdr));
+            ks_log_printf(log, KS_LOG_LEVEL_INFO,
+                        "Found network interface %d: %s\n", iface->ifi_index,
+                        (char *) RTA_DATA(hdr));
         }
 
         hdr = RTA_NEXT(hdr, remaining);
@@ -84,11 +83,20 @@ void timer_cb(void *data, struct ks_eventloop_io *io)
 {
 
 	struct itimerspec ts;
+    struct sysinfo info;
 	int msec = 500;
     struct ks_log *log = (struct ks_log *) io->data;
 
+    sysinfo(&info);
 
-    ks_log_printf(log, KS_LOG_LEVEL_INFO, "Periodic timer: %i\n", 123);
+    ks_log_printf(log, KS_LOG_LEVEL_INFO, "free: %ikb, share: %ikb, " \
+        "buf: %ikb, load %li, %li, %li\n",
+        info.freeram/1024,
+        info.sharedram/1024,
+        info.bufferram/1024,
+        info.loads[0],
+        info.loads[1],
+        info.loads[2]);
 
 	ts.it_interval.tv_sec = 0;
 	ts.it_interval.tv_nsec = 0;
@@ -106,11 +114,41 @@ int main(int argc, char **argv)
     int err = 0;
    
 
+    err = ks_eventloop_init(&el);
+
+    ks_log_init(&log, el, 16*KS_KB);
+    
+	struct itimerspec ts;
+    int tfd = timerfd_create(CLOCK_MONOTONIC, 0);
+	int msec = 500;
+
+	ts.it_interval.tv_sec = 0;
+	ts.it_interval.tv_nsec = 0;
+	ts.it_value.tv_sec = msec / 1000;
+	ts.it_value.tv_nsec = (msec % 1000) * 1000000;
+
+	err = timerfd_settime(tfd, 0, &ts, NULL);
+    struct ks_eventloop_io *io;
+    err = ks_eventloop_alloc_io(el, &io);
+    int i = 0;
+
+    io->fd = tfd;
+    io->cb = timer_cb;
+    io->data = log;
+    io->flags = EPOLLIN;
+
+    err = ks_eventloop_add(el, io);
+
+    struct ks_log_sink *stdout_sink;
+    struct ks_log_sink *udp_sink;
+
+    ks_log_init_stdout_sink(log, &stdout_sink);
+
+    ks_log_printf(log, KS_LOG_LEVEL_INFO, "Kickstart init %s\n", VERSION);
+
     tcgetattr(STDIN_FILENO, &ctrl);
     ctrl.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &ctrl);
-
-    printf (" --- Kickstart %s ---\n",VERSION);
 
     mkdir("/sys/kernel/config/usb_gadget/g1",0777);
     mkdir("/sys/kernel/config/usb_gadget/g1/strings/0x409",0777);
@@ -146,11 +184,11 @@ int main(int argc, char **argv)
 
     // Send request for all network interfaces.
     struct rtgenmsg rt_hdr = { .rtgen_family = AF_PACKET, };
-    int ret = nl_send_simple(socket, RTM_GETLINK, NLM_F_REQUEST | NLM_F_DUMP, &rt_hdr, sizeof(rt_hdr));
-    printf("nl_send_simple returned %d\n", ret);
+    int ret = nl_send_simple(socket, RTM_GETLINK, NLM_F_REQUEST | NLM_F_DUMP,
+                                &rt_hdr, sizeof(rt_hdr));
 
     // Retrieve the kernel's answer.
-    nl_socket_modify_cb(socket, NL_CB_VALID, NL_CB_CUSTOM, callback, NULL);
+    nl_socket_modify_cb(socket, NL_CB_VALID, NL_CB_CUSTOM, callback, log);
     nl_recvmsgs_default(socket);
 
     struct rtnl_link *link, *change;
@@ -179,38 +217,12 @@ int main(int argc, char **argv)
 
     if (err < 0)
         printf ("addr_add error: %s\n", nl_geterror(err));
+/*
+    err = ks_log_init_udp_sink(log, &udp_sink, "198.0.0.255", 8000);
 
-    printf("Initializing eventloop...\n");
-    err = ks_eventloop_init(&el);
-
-    ks_log_init(&log, el, 16*KS_KB);
-    
-	struct itimerspec ts;
-    int tfd = timerfd_create(CLOCK_MONOTONIC, 0);
-	int msec = 500;
-
-	ts.it_interval.tv_sec = 0;
-	ts.it_interval.tv_nsec = 0;
-	ts.it_value.tv_sec = msec / 1000;
-	ts.it_value.tv_nsec = (msec % 1000) * 1000000;
-
-	err = timerfd_settime(tfd, 0, &ts, NULL);
-    struct ks_eventloop_io *io;
-    err = ks_eventloop_alloc_io(el, &io);
-    int i = 0;
-
-    io->fd = tfd;
-    io->cb = timer_cb;
-    io->data = log;
-    io->flags = EPOLLIN;
-
-    err = ks_eventloop_add(el, io);
-
-    struct ks_log_sink *stdout_sink;
-    ks_log_init_stdout_sink(log, &stdout_sink);
-
-    ks_log_printf(log, KS_LOG_LEVEL_INFO, "Test message: %i\n", 123);
-
+    if (err != KS_OK)
+        ks_log_printf(log, KS_LOG_LEVEL_ERR, "Could not initialise log UDP server\n");
+*/
     ks_eventloop_loop(el);
 /*
     while (1)
