@@ -1,0 +1,21 @@
+
+config BR2_PACKAGE_BPAK
+	bool "bpak"
+	depends on BR2_PACKAGE_MBEDTLS
+	depends on BR2_PACKAGE_XZ
+	help
+        Bitpacker library
+
+if BR2_PACKAGE_BPAK
+config BR2_PACKAGE_BPAK_TOOL
+	bool "tool"
+	depends on BR2_PACKAGE_BPAK
+	help
+	  Build the BPAK tool
+endif
+
+config BR2_PACKAGE_HOST_BPAK
+	bool "host bpak"
+	help
+        Bitpacker tool and library
+
