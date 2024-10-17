@@ -45,3 +45,7 @@
 # Kernel Module Compile Results
 *.mod*
 *.cmd
+
+build-*
+buildroot-*
+dl
