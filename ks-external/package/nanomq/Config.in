@@ -1,0 +1,7 @@
+
+config BR2_PACKAGE_NANOMQ
+	bool "nanomq"
+	depends on BR2_PACKAGE_WOLFSSL
+	help
+        NanoMQ MQTT broker
+
